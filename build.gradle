@@ -3,7 +3,9 @@ plugins {
 	id 'maven-publish'
 }
 
-archivesBaseName = project.archives_base_name
+// Support both jar_name (for pipeline) and archives_base_name
+def jarName = project.hasProperty("jar_name") ? project.jar_name : project.archives_base_name
+archivesBaseName = jarName
 version = project.mod_version
 group = project.maven_group
 
@@ -99,6 +101,22 @@ loom {
 			inherit client
 			runDir = "run2"
 			configName = "Test Minecraft Client 2"
+		}
+	}
+}
+
+// Task to print property values for CI/CD
+task printProperty {
+	doLast {
+		if (project.hasProperty("property")) {
+			def prop = project.property("property")
+			if (project.hasProperty(prop)) {
+				println project.property(prop)
+			} else {
+				throw new GradleException("Property '${prop}' not found")
+			}
+		} else {
+			throw new GradleException("Usage: gradle printProperty -Pproperty=<property_name>")
 		}
 	}
 }

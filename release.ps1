@@ -15,7 +15,8 @@ git pull
 # Update gradle.properties with the new version
 Write-Host "📝 Updating gradle.properties with version $Version" -ForegroundColor Cyan
 $gradleProps = Get-Content gradle.properties -Raw
-$gradleProps = $gradleProps -replace "mod_version=.*", "mod_version=$Version"
+# Handle spaces around equals sign: "mod_version = " or "mod_version="
+$gradleProps = $gradleProps -replace "mod_version\s*=\s*[^\r\n]*", "mod_version = $Version"
 Set-Content gradle.properties -Value $gradleProps -NoNewline
 
 # Check if version changed

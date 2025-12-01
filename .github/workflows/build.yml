@@ -93,19 +93,39 @@ jobs:
         id: rename_jar
         run: |
           MC_VERSION="${{ steps.version_config.outputs.mc_version }}"
-          MOD_VERSION=$(grep "^mod_version=" gradle.properties | cut -d'=' -f2)
-          MOD_NAME=$(grep "^jar_name=" gradle.properties | cut -d'=' -f2)
+          # Handle spaces around equals sign in gradle.properties
+          MOD_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+          MOD_NAME=$(grep "^[[:space:]]*jar_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*jar_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
           
-          # Find the main JAR (excluding sources and dev)
+          echo "Looking for JAR: ${MOD_NAME}-${MOD_VERSION}.jar"
+          echo "Files in build/libs:"
+          ls -la build/libs/
+          
+          # Find the main JAR (excluding sources and dev) - try exact match first, then pattern match
           ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
+          
+          # If not found, try to find any JAR with the mod name (in case version format differs)
+          if [ -z "$ORIGINAL_JAR" ]; then
+            echo "Exact match not found, trying pattern match..."
+            ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-*.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
+            if [ -n "$ORIGINAL_JAR" ]; then
+              # Extract actual version from found JAR filename
+              ACTUAL_VERSION=$(basename "$ORIGINAL_JAR" | sed "s/${MOD_NAME}-//" | sed "s/\.jar$//")
+              echo "Found JAR with version: $ACTUAL_VERSION (using this instead of $MOD_VERSION)"
+              MOD_VERSION="$ACTUAL_VERSION"
+            fi
+          fi
           
           if [ -z "$ORIGINAL_JAR" ]; then
             echo "❌ No JAR file found"
+            echo "Expected pattern: ${MOD_NAME}-${MOD_VERSION}.jar"
             ls -la build/libs/
             exit 1
           fi
           
-          # Create versioned filename: custom-portals-3.11.0+1.21.10-1.21.8.jar
+          echo "Found JAR: $ORIGINAL_JAR"
+          
+          # Create versioned filename: custom-portals-{version}-{mc_version}.jar
           VERSIONED_JAR="build/libs/${MOD_NAME}-${MOD_VERSION}-${MC_VERSION}.jar"
           cp "$ORIGINAL_JAR" "$VERSIONED_JAR"
           
@@ -457,17 +477,27 @@ jobs:
             # Build with refresh dependencies
             ./gradlew build --no-daemon --refresh-dependencies
             
-            # Find and copy the built JAR
-            ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
+            # Find and copy the built JAR - handle spaces in gradle.properties
+            ACTUAL_MOD_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+            ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-${ACTUAL_MOD_VERSION}.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
+            
+            # If not found, try pattern match
+            if [ -z "$ORIGINAL_JAR" ]; then
+              ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-*.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
+              if [ -n "$ORIGINAL_JAR" ]; then
+                ACTUAL_MOD_VERSION=$(basename "$ORIGINAL_JAR" | sed "s/${MOD_NAME}-//" | sed "s/\.jar$//")
+              fi
+            fi
+            
             if [ -n "$ORIGINAL_JAR" ]; then
-              VERSIONED_JAR="build/libs-all/${MOD_NAME}-${MOD_VERSION}-${MC_VERSION}.jar"
+              VERSIONED_JAR="build/libs-all/${MOD_NAME}-${ACTUAL_MOD_VERSION}-${MC_VERSION}.jar"
               cp "$ORIGINAL_JAR" "$VERSIONED_JAR"
               echo "✅ Built: $VERSIONED_JAR"
             else
               echo "❌ Failed to find JAR for $MC_VERSION"
               echo "Contents of build/libs:"
               ls -la build/libs/ || echo "build/libs does not exist"
-              echo "Looking for: ${MOD_NAME}-${MOD_VERSION}.jar"
+              echo "Looking for: ${MOD_NAME}-${ACTUAL_MOD_VERSION}.jar"
               exit 1
             fi
           done

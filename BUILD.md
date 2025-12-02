@@ -1,6 +1,6 @@
 # Build Documentation
 
-This document explains how to build the Compostables mod, test it locally, and manage releases.
+This document explains how to build the Custom Portals mod, test it locally, and manage releases.
 
 ## Quick Start
 
@@ -40,7 +40,7 @@ Built JAR files are located in `build/libs/` with the naming format:
 {jar_name}-{mod_version}.jar
 ```
 
-Example: `su-compostables-1.0.10.jar`
+Example: `custom-portals-1.1.0.jar`
 
 ## Build Configuration
 
@@ -154,19 +154,20 @@ cd test-server
 4. **Verify mod loaded:**
    Look for these messages in the logs:
    ```
-   [main/INFO]: Initializing Compostables mod!
-   [main/INFO]: Compostables mod initialized! More organic items can now be composted.
+   [main/INFO]: Initializing Custom Portals mod!
+   [main/INFO]: Custom Portals mod initialized!
    ```
 
-### Testing Block Item Composting
+### Testing Portal Functionality
 
-The mod includes `ComposterBlockMixin` to allow block items (carpets, wool, etc.) to be composted. To test:
+To test the mod:
 
 1. Start the test server
 2. Connect with a Minecraft client
-3. Place a composter
-4. Try composting a carpet or wool block
-5. Verify it composts instead of placing as a block
+3. Create a portal frame using any block
+4. Use a portal catalyst to activate the portal
+5. Test portal linking and teleportation
+6. Verify rune effects (haste, gate, enhancer, infinity)
 
 ## CI/CD Pipeline
 
@@ -381,6 +382,23 @@ The pipeline validates:
 - ✅ Mod initializes without errors
 - ✅ All artifacts are collected for release
 
+### Pipeline Monitoring Scripts
+
+**scripts/check-pipeline.ps1**: Quick status check
+```powershell
+.\scripts\check-pipeline.ps1
+```
+
+**scripts/get-pipeline-errors.ps1**: Get detailed error information
+```powershell
+.\scripts\get-pipeline-errors.ps1
+```
+
+**scripts/watch-pipeline.ps1**: Monitor pipeline until completion
+```powershell
+.\scripts\watch-pipeline.ps1
+```
+
 ## Troubleshooting
 
 ### Build Fails with Java Version Error
@@ -477,18 +495,25 @@ To build for a different Minecraft version:
 ## Project Structure
 
 ```
-mods-compostables/
+mod-CustomPortals/
 ├── src/main/java/          # Java source code
-│   └── org/survivorsunited/mods/compostables/
-│       ├── Compostables.java           # Main mod class
-│       └── mixin/
-│           ├── ComposterBlockMixin.java  # Block item composting fix
-│           └── FarmerMixin.java          # Villager compatibility
+│   └── dev/custom/portals/
+│       ├── CustomPortals.java           # Main mod class
+│       ├── blocks/                      # Portal and rune blocks
+│       ├── config/                      # Configuration system
+│       ├── data/                        # Portal data storage
+│       ├── items/                       # Portal catalyst items
+│       ├── mixin/                       # Mixins for client/server
+│       ├── registry/                    # Block, item, particle registries
+│       └── util/                        # Utility functions
 ├── src/main/resources/     # Resources (mixins, fabric.mod.json)
 ├── build/libs/            # Built JAR files
 ├── test-server/           # Local test server (created by build.ps1)
+├── scripts/               # PowerShell build and deployment scripts
 ├── build.ps1              # Windows build script
+├── release.ps1            # Release creation script
 ├── gradle.properties      # Build configuration
+├── versions.json         # Version configuration for each MC version
 └── build.gradle           # Gradle build script
 ```
 
@@ -505,6 +530,9 @@ mods-compostables/
 - **scripts/start-server.ps1**: Advanced server launcher
 - **scripts/check-release.ps1**: Check release and pipeline status
 - **scripts/check-pipeline-logs.ps1**: Check detailed pipeline logs
+- **scripts/check-pipeline.ps1**: Quick pipeline status checker
+- **scripts/get-pipeline-errors.ps1**: Get detailed pipeline error information
+- **scripts/watch-pipeline.ps1**: Monitor pipeline until completion
 
 ### CI/CD Files
 - **.github/workflows/build.yml**: Complete CI/CD pipeline configuration

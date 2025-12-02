@@ -45,10 +45,22 @@ This is a Minecraft Fabric mod that allows players to construct inter- and intra
 - ModMenu integration for in-game config UI
 
 ### Build and Deployment
-- Use PowerShell scripts in /scripts/ directory
-- Configuration is centralized in gradle.properties
+- Use PowerShell scripts in `scripts/` directory
+- Configuration is centralized in `gradle.properties`
 - Build with `.\build.ps1` on Windows
 - Test with `.\build.ps1 -StartServer` for local server testing
+- Release with `.\release.ps1 -Version "x.y.z"`
+- Monitor pipelines with `.\scripts\check-pipeline.ps1`
+- Check errors with `.\scripts\get-pipeline-errors.ps1`
+- Watch pipeline with `.\scripts\watch-pipeline.ps1`
+
+### Pipeline and CI/CD
+- GitHub Actions workflow: `.github/workflows/build.yml`
+- Builds for multiple Minecraft versions (1.21.5-1.21.10)
+- Version configuration in `versions.json`
+- Pipeline handles spaces in gradle.properties automatically
+- JAR finding logic with fallback pattern matching
+- Docs job disabled until docs directory exists
 
 ## Key Classes
 - `CustomPortals.java` - Main mod initialization
@@ -73,3 +85,7 @@ This is a Minecraft Fabric mod that allows players to construct inter- and intra
 - Uses Cardinal Components for world data persistence
 - Client and server code separated appropriately
 - Mixins used for entity and HUD modifications
+- Black portal emits no light (NO_LUMINANCE)
+- All scripts located in `scripts/` folder
+- Pipeline automatically builds for all supported MC versions
+- Version format: `mod_version = x.y.z` (no Minecraft version suffix in main branch)

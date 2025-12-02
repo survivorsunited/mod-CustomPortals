@@ -30,3 +30,5 @@ run/
 run1/
 run2/
 .PVS-Studio/
+
+test-server/

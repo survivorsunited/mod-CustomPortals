@@ -14,9 +14,9 @@ if ($tagExists) {
 }
 
 # Check gradle.properties version
-$modVersionLine = Select-String -Path gradle.properties -Pattern "^[[:space:]]*mod_version[[:space:]]*="
+$modVersionLine = Select-String -Path gradle.properties -Pattern "mod_version\s*="
 if ($modVersionLine) {
-    $gradleVersion = ($modVersionLine.Line -replace ".*mod_version[[:space:]]*=[[:space:]]*", "").Trim()
+    $gradleVersion = ($modVersionLine.Line -replace ".*mod_version\s*=\s*", "").Trim()
     Write-Host "Current mod_version in gradle.properties: $gradleVersion" -ForegroundColor Cyan
 } else {
     Write-Host "⚠️ Could not find mod_version in gradle.properties" -ForegroundColor Yellow

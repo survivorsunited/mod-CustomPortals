@@ -221,6 +221,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     needs: build-matrix
+    if: always()  # Run even if some matrix jobs fail
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -250,6 +251,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-24.04
+    if: false  # Disable docs job until docs directory exists
     permissions:
       contents: read
       pages: write
@@ -318,7 +320,7 @@ jobs:
 
   auto-version:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [build-matrix, docs]
+    needs: [build-matrix]
     runs-on: ubuntu-24.04
     outputs:
       version_changed: ${{ steps.version_changed.outputs.changed }}

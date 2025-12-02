@@ -3,6 +3,7 @@
 
 param(
     [switch]$StartServer,
+    [switch]$Clean,
     [string]$MinecraftVersion = "1.21.5"
 )
 
@@ -12,6 +13,61 @@ $env:JAVA_HOME = $jdkPath
 $env:Path = "$jdkPath\bin;" + $env:Path
 
 Write-Host "JAVA_HOME set to $jdkPath" -ForegroundColor Green
+
+# Always clean Loom cache when switching versions to avoid conflicts
+# Use version-specific Gradle user home to isolate caches
+$gradleUserHome = "$PWD\.gradle-$MinecraftVersion"
+$env:GRADLE_USER_HOME = $gradleUserHome
+Write-Host "🧹 Using isolated Gradle cache for ${MinecraftVersion}: ${gradleUserHome}" -ForegroundColor Cyan
+# Clean entire version-specific cache to avoid conflicts
+Remove-Item -Path $gradleUserHome -Recurse -Force -ErrorAction SilentlyContinue
+./gradlew --stop | Out-Null
+
+# Update gradle.properties with correct Minecraft version BEFORE building
+Write-Host "📝 Updating gradle.properties for Minecraft $MinecraftVersion..." -ForegroundColor Cyan
+$versionsJson = Get-Content versions.json | ConvertFrom-Json
+$versionConfig = $versionsJson.$MinecraftVersion
+
+if (-not $versionConfig) {
+    Write-Host "❌ Unknown Minecraft version: $MinecraftVersion" -ForegroundColor Red
+    Write-Host "Supported versions: $($versionsJson.PSObject.Properties.Name -join ', ')" -ForegroundColor Yellow
+    exit 1
+}
+
+# Read gradle.properties
+$gradleProps = Get-Content gradle.properties -Raw
+
+# Update Minecraft version and related properties
+$gradleProps = $gradleProps -replace "minecraft_version\s*=\s*[^\r\n]*", "minecraft_version=$MinecraftVersion"
+$gradleProps = $gradleProps -replace "yarn_mappings\s*=\s*[^\r\n]*", "yarn_mappings=$($versionConfig.yarn_mappings)"
+$gradleProps = $gradleProps -replace "loader_version\s*=\s*[^\r\n]*", "loader_version=$($versionConfig.loader_version)"
+$gradleProps = $gradleProps -replace "fabric_loader_version\s*=\s*[^\r\n]*", "fabric_loader_version=$($versionConfig.loader_version)"
+$gradleProps = $gradleProps -replace "loom_version\s*=\s*[^\r\n]*", "loom_version=$($versionConfig.loom_version)"
+$gradleProps = $gradleProps -replace "fabric_version\s*=\s*[^\r\n]*", "fabric_version=$($versionConfig.fabric_version)"
+
+# Write back
+$gradleProps | Set-Content gradle.properties -NoNewline
+Write-Host "✅ Updated gradle.properties:" -ForegroundColor Green
+Write-Host "   Minecraft: $MinecraftVersion" -ForegroundColor Gray
+Write-Host "   Yarn: $($versionConfig.yarn_mappings)" -ForegroundColor Gray
+Write-Host "   Loader: $($versionConfig.loader_version)" -ForegroundColor Gray
+Write-Host "   Fabric: $($versionConfig.fabric_version)" -ForegroundColor Gray
+
+# Clean build artifacts and Loom cache if requested (required when switching versions)
+if ($Clean) {
+    Write-Host "🧹 Cleaning build artifacts and Loom cache..." -ForegroundColor Cyan
+    # Remove Loom cache and build directory to avoid version conflicts
+    Remove-Item -Path ".gradle/loom-cache" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "build" -Recurse -Force -ErrorAction SilentlyContinue
+    ./gradlew clean --no-daemon
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "⚠️ Clean failed, continuing anyway..." -ForegroundColor Yellow
+    } else {
+        Write-Host "✅ Clean successful!" -ForegroundColor Green
+    }
+    # Stop Gradle daemon to ensure clean state
+    ./gradlew --stop
+}
 
 # Minecraft Server Download Map
 $MinecraftServerDownloadMap = @{
@@ -44,7 +100,7 @@ $FabricApiDownloadMap = @{
 }
 
 # Build the mod
-Write-Host "🔨 Building mod..." -ForegroundColor Cyan
+Write-Host "🔨 Building mod for Minecraft $MinecraftVersion..." -ForegroundColor Cyan
 ./gradlew build
 
 if ($LASTEXITCODE -ne 0) {
@@ -53,6 +109,27 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "✅ Build successful!" -ForegroundColor Green
+
+# Rename JAR to include Minecraft version (like pipeline does)
+$modVersion = (Select-String -Path gradle.properties -Pattern "mod_version\s*=" | ForEach-Object { ($_.Line -replace ".*mod_version\s*=\s*", "").Trim() })
+$jarName = (Select-String -Path gradle.properties -Pattern "jar_name\s*=" | ForEach-Object { ($_.Line -replace ".*jar_name\s*=\s*", "").Trim() })
+if (-not $jarName) {
+    $jarName = (Select-String -Path gradle.properties -Pattern "archives_base_name\s*=" | ForEach-Object { ($_.Line -replace ".*archives_base_name\s*=\s*", "").Trim() })
+}
+
+$originalJar = Get-ChildItem -Path "build/libs" -Filter "${jarName}-${modVersion}.jar" -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike "*-sources.jar" -and $_.Name -notlike "*-dev.jar" } | Select-Object -First 1
+
+if ($originalJar) {
+    $versionedJar = "build/libs/${jarName}-${modVersion}-${MinecraftVersion}.jar"
+    if (-not (Test-Path $versionedJar)) {
+        Copy-Item $originalJar.FullName -Destination $versionedJar -Force
+        Write-Host "📦 Created versioned JAR: $versionedJar" -ForegroundColor Green
+    } else {
+        Write-Host "📦 Versioned JAR already exists: $versionedJar" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "⚠️ Could not find JAR to rename: ${jarName}-${modVersion}.jar" -ForegroundColor Yellow
+}
 
 # Start server if requested
 if ($StartServer) {
@@ -119,6 +196,44 @@ if ($StartServer) {
         }
     } else {
         Write-Host "✅ Fabric API already exists in mods directory" -ForegroundColor Green
+    }
+    
+    # Download YACL (Yet Another Config Lib) if not exists
+    # Map YACL versions to Minecraft versions
+    # Based on available Maven versions: 3.8.0+1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.6, 1.21.9
+    $yaclVersionMap = @{
+        "1.21.5" = "3.8.0+1.21.5"
+        "1.21.6" = "3.8.0+1.21.6"
+        "1.21.7" = "3.8.0+1.21.6"  # Use 1.21.6 version (closest available)
+        "1.21.8" = "3.8.0+1.21.6"  # Use 1.21.6 version (closest available)
+        "1.21.9" = "3.8.0+1.21.9"
+        "1.21.10" = "3.8.0+1.21.9"  # Use 1.21.9 version (closest available)
+    }
+    $yaclVersion = if ($yaclVersionMap.ContainsKey($MinecraftVersion)) { $yaclVersionMap[$MinecraftVersion] } else { "3.8.0+1.21.9" }
+    
+    $yaclFile = Get-ChildItem -Path $modsDir -Filter "yet-another-config-lib*.jar" -ErrorAction SilentlyContinue
+    if (-not $yaclFile) {
+        Write-Host "📥 Downloading YACL (Yet Another Config Lib) $yaclVersion for MC $MinecraftVersion..." -ForegroundColor Yellow
+        # Download from Maven repository (same as Gradle uses)
+        $yaclMavenUrl = "https://maven.isxander.dev/releases/dev/isxander/yet-another-config-lib/$yaclVersion-fabric/yet-another-config-lib-$yaclVersion-fabric.jar"
+        try {
+            Invoke-WebRequest -Uri $yaclMavenUrl -OutFile "$modsDir/yet-another-config-lib-$yaclVersion-fabric.jar"
+            Write-Host "✅ YACL downloaded" -ForegroundColor Green
+        } catch {
+            Write-Host "⚠️ Failed to download YACL from Maven. Trying Modrinth..." -ForegroundColor Yellow
+            # Fallback: try Modrinth CDN
+            try {
+                $yaclModrinthUrl = "https://cdn.modrinth.com/data/yacl/versions/$yaclVersion/yacl-$yaclVersion.jar"
+                Invoke-WebRequest -Uri $yaclModrinthUrl -OutFile "$modsDir/yacl-$yaclVersion.jar"
+                Write-Host "✅ YACL downloaded from Modrinth" -ForegroundColor Green
+            } catch {
+                Write-Host "❌ Failed to download YACL automatically. Please download manually:" -ForegroundColor Red
+                Write-Host "   Maven: $yaclMavenUrl" -ForegroundColor Cyan
+                Write-Host "   Or from: https://modrinth.com/mod/yacl" -ForegroundColor Cyan
+            }
+        }
+    } else {
+        Write-Host "✅ YACL already exists in mods directory" -ForegroundColor Green
     }
     
     # Find and copy the built mod JAR

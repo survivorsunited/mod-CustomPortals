@@ -207,7 +207,6 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       }
    }
 
-   @Override
    public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler entityCollisionHandler, boolean bl) {
       if (!state.get(LIT))
          return;

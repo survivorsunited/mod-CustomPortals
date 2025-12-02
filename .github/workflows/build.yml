@@ -522,14 +522,28 @@ jobs:
           MOD_NAME="${{ steps.properties.outputs.modName }}"
           MOD_VERSION="${{ steps.properties.outputs.modVersion }}"
           
-          # Find all versioned JARs
+          echo "Looking for JARs with pattern: ${MOD_NAME}-${MOD_VERSION}-*.jar"
+          echo "Files in build/libs:"
+          ls -la build/libs/ || echo "build/libs does not exist"
+          
+          # Find all versioned JARs - try exact version first
           JARS=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | sort)
+          
+          # If not found, try pattern match (in case version format differs)
+          if [ -z "$JARS" ]; then
+            echo "Exact match not found, trying pattern match..."
+            JARS=$(find build/libs -name "${MOD_NAME}-*-*.jar" ! -name "*sources*" ! -name "*dev*" | sort)
+          fi
           
           if [ -z "$JARS" ]; then
             echo "❌ No versioned JARs found"
+            echo "Expected pattern: ${MOD_NAME}-${MOD_VERSION}-*.jar"
             ls -la build/libs/
             exit 1
           fi
+          
+          echo "✅ Found JARs:"
+          echo "$JARS"
           
           # Create newline-separated list for release (action-gh-release expects multiline)
           echo "jars<<EOF" >> $GITHUB_OUTPUT
@@ -669,14 +683,28 @@ jobs:
           MOD_NAME="${{ steps.properties.outputs.modName }}"
           MOD_VERSION="${{ steps.release_version.outputs.version }}"
           
-          # Find all versioned JARs
+          echo "Looking for JARs with pattern: ${MOD_NAME}-${MOD_VERSION}-*.jar"
+          echo "Files in build/libs:"
+          ls -la build/libs/ || echo "build/libs does not exist"
+          
+          # Find all versioned JARs - try exact version first
           JARS=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | sort)
+          
+          # If not found, try pattern match (in case version format differs)
+          if [ -z "$JARS" ]; then
+            echo "Exact match not found, trying pattern match..."
+            JARS=$(find build/libs -name "${MOD_NAME}-*-*.jar" ! -name "*sources*" ! -name "*dev*" | sort)
+          fi
           
           if [ -z "$JARS" ]; then
             echo "❌ No versioned JARs found"
+            echo "Expected pattern: ${MOD_NAME}-${MOD_VERSION}-*.jar"
             ls -la build/libs/
             exit 1
           fi
+          
+          echo "✅ Found JARs:"
+          echo "$JARS"
           
           # Create newline-separated list for release (action-gh-release expects multiline)
           echo "jars<<EOF" >> $GITHUB_OUTPUT

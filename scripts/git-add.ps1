@@ -6,4 +6,5 @@ if ($Files -eq "." -or $Files.Count -eq 0) {
 } else {
     git add $Files
 }
+exit $LASTEXITCODE
 

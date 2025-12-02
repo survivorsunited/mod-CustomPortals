@@ -5,4 +5,5 @@ param(
 )
 
 git commit -m $Message
+exit $LASTEXITCODE
 

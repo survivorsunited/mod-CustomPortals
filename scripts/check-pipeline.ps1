@@ -1,5 +1,6 @@
 # Quick pipeline status checker
 $runs = gh run list --workflow=build.yml --limit 3 --json databaseId,status,conclusion,displayTitle,headBranch | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "Recent Pipeline Runs:" -ForegroundColor Cyan
 $runs | ForEach-Object {
@@ -19,5 +20,7 @@ if ($latestFailed) {
         $errorLog
     }
 }
+
+exit 0
 
 

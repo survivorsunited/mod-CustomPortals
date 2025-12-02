@@ -5,6 +5,7 @@ param(
 )
 
 $runs = gh run list --workflow=$Workflow --limit $Limit --json databaseId,status,conclusion,displayTitle,headBranch | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "Recent Pipeline Runs:" -ForegroundColor Cyan
 $runs | ForEach-Object {
@@ -15,4 +16,5 @@ $runs | ForEach-Object {
 }
 
 return $runs
+exit 0
 

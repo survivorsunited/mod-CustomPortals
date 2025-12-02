@@ -1,11 +1,16 @@
 # Watch pipeline until completion
-Write-Host "Watching pipeline..." -ForegroundColor Cyan
-$maxWait = 600  # 10 minutes max
-$elapsed = 0
-$checkInterval = 15
+param(
+    [string]$Workflow = "build.yml",
+    [int]$MaxWait = 600,
+    [int]$CheckInterval = 15
+)
 
-while ($elapsed -lt $maxWait) {
-    $run = gh run list --workflow=build.yml --limit 1 --json databaseId,status,conclusion,displayTitle | ConvertFrom-Json
+Write-Host "Watching pipeline..." -ForegroundColor Cyan
+$elapsed = 0
+
+while ($elapsed -lt $MaxWait) {
+    $run = gh run list --workflow=$Workflow --limit 1 --json databaseId,status,conclusion,displayTitle | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     
     $status = if ($run.status -eq "completed") { 
         if ($run.conclusion -eq "success") { "✅ SUCCESS" } else { "❌ FAILED" }
@@ -16,17 +21,21 @@ while ($elapsed -lt $maxWait) {
     if ($run.status -eq "completed") {
         if ($run.conclusion -eq "failure") {
             Write-Host "`nChecking errors..." -ForegroundColor Red
-            .\get-pipeline-errors.ps1
+            .\scripts\get-pipeline-errors.ps1
+            exit 1
         }
-        break
+        exit 0
     }
     
-    Start-Sleep -Seconds $checkInterval
-    $elapsed += $checkInterval
+    Start-Sleep -Seconds $CheckInterval
+    $elapsed += $CheckInterval
 }
 
-if ($elapsed -ge $maxWait) {
+if ($elapsed -ge $MaxWait) {
     Write-Host "Timeout waiting for pipeline" -ForegroundColor Yellow
+    exit 1
 }
+
+exit 0
 
 

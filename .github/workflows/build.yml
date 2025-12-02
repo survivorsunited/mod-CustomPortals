@@ -511,6 +511,17 @@ jobs:
             rmdir build/libs-all 2>/dev/null || true
             echo "📦 All JARs collected in build/libs:"
             ls -la build/libs/
+            
+            # Validate we have JARs for all expected versions
+            JAR_COUNT=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | wc -l)
+            EXPECTED_VERSIONS=6
+            if [ "$JAR_COUNT" -lt "$EXPECTED_VERSIONS" ]; then
+              echo "⚠️ Warning: Expected $EXPECTED_VERSIONS JARs but found $JAR_COUNT"
+              echo "Found JARs:"
+              find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | sort
+            else
+              echo "✅ Found all $JAR_COUNT expected JARs"
+            fi
           else
             echo "❌ No JARs found in build/libs-all"
             exit 1

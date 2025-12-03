@@ -15,7 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import dev.custom.portals.util.EntityMixinAccess;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPosition;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
@@ -83,7 +82,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
             profiler.pop();
             profiler.push("placing");
             this.setServerWorld(serverWorld);
-            this.networkHandler.requestTeleport(EntityPosition.fromTeleportTarget(teleportTarget), teleportTarget.comp_3183());
+            this.networkHandler.requestTeleport(thisPlayer.getX(), thisPlayer.getY(), thisPlayer.getZ(), thisPlayer.getYaw(), thisPlayer.getPitch());
             this.networkHandler.syncWithPlayerPosition();
             serverWorld.onDimensionChanged(thisPlayer);
             profiler.pop();

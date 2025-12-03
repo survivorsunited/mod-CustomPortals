@@ -89,7 +89,6 @@ public class CPParticles {
                             this.spriteProvider = sprites;
                     }
 
-                    @Override
                     public Particle createParticle(SimpleParticleType simpleParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Random random) {
                             return new BlackPortalParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
                     }
@@ -115,7 +114,6 @@ public class CPParticles {
                             this.spriteProvider = sprites;
                     }
 
-                    @Override
                     public Particle createParticle(SimpleParticleType simpleParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Random random) {
                             return new BluePortalParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
                     }
@@ -141,7 +139,6 @@ public class CPParticles {
                             this.spriteProvider = sprites;
                     }
 
-                    @Override
                     public Particle createParticle(SimpleParticleType simpleParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Random random) {
                             return new BrownPortalParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
                     }
@@ -167,7 +164,6 @@ public class CPParticles {
                             this.spriteProvider = sprites;
                     }
 
-                    @Override
                     public Particle createParticle(SimpleParticleType simpleParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Random random) {
                             return new CyanPortalParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
                     }
@@ -191,7 +187,6 @@ public class CPParticles {
                             this.spriteProvider = sprites;
                     }
 
-                    @Override
                     public Particle createParticle(SimpleParticleType simpleParticleType, ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Random random) {
                             return new GrayPortalParticle(clientWorld, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
                     }
@@ -217,7 +212,6 @@ public class CPParticles {
                 this.spriteProvider = sprites;
             }
 
-            @Override
             public Particle createParticle(SimpleParticleType type, ClientWorld world, double d, double e, double f, double g, double h, double i, Random random) {
                 return new GreenPortalParticle(world, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
             }
@@ -243,7 +237,6 @@ public class CPParticles {
                 this.spriteProvider = sprites;
             }
 
-            @Override
             public Particle createParticle(SimpleParticleType type, ClientWorld world, double d, double e, double f, double g, double h, double i, Random random) {
                 return new LightBluePortalParticle(world, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
             }
@@ -267,7 +260,6 @@ public class CPParticles {
                 this.spriteProvider = sprites;
             }
 
-            @Override
             public Particle createParticle(SimpleParticleType type, ClientWorld world, double d, double e, double f, double g, double h, double i, Random random) {
                 return new LightGrayPortalParticle(world, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
             }
@@ -293,7 +285,6 @@ public class CPParticles {
                 this.spriteProvider = sprites;
             }
 
-            @Override
             public Particle createParticle(SimpleParticleType type, ClientWorld world, double d, double e, double f, double g, double h, double i, Random random) {
                 return new LimePortalParticle(world, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
             }
@@ -319,7 +310,6 @@ public class CPParticles {
                 this.spriteProvider = sprites;
             }
 
-            @Override
             public Particle createParticle(SimpleParticleType type, ClientWorld world, double d, double e, double f, double g, double h, double i, Random random) {
                 return new MagentaPortalParticle(world, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
             }
@@ -345,7 +335,6 @@ public class CPParticles {
                 this.spriteProvider = sprites;
             }
 
-            @Override
             public Particle createParticle(SimpleParticleType type, ClientWorld world, double d, double e, double f, double g, double h, double i, Random random) {
                 return new OrangePortalParticle(world, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
             }
@@ -371,7 +360,6 @@ public class CPParticles {
                 this.spriteProvider = sprites;
             }
 
-            @Override
             public Particle createParticle(SimpleParticleType type, ClientWorld world, double d, double e, double f, double g, double h, double i, Random random) {
                 return new PinkPortalParticle(world, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
             }
@@ -397,7 +385,6 @@ public class CPParticles {
                 this.spriteProvider = sprites;
             }
 
-            @Override
             public Particle createParticle(SimpleParticleType type, ClientWorld world, double d, double e, double f, double g, double h, double i, Random random) {
                 return new RedPortalParticle(world, d, e, f, g, h, i, this.spriteProvider.getSprite(random));
             }

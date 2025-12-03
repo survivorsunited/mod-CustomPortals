@@ -77,7 +77,8 @@ public class CPParticles {
     static class BlackPortalParticle extends PortalParticle {
 
             protected BlackPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-                    super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
                     this.red = this.green = this.blue = 0.0F;
             }
 
@@ -99,7 +100,8 @@ public class CPParticles {
     static class BluePortalParticle extends PortalParticle {
 
             protected BluePortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-                    super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
                     float j = this.random.nextFloat() * 0.6F + 0.4F;
                     this.red = 0.2F * j;
                     this.green = 0.2F * j;
@@ -124,7 +126,8 @@ public class CPParticles {
     static class BrownPortalParticle extends PortalParticle {
 
             protected BrownPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-                    super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
                     float j = this.random.nextFloat() * 0.6F + 0.4F;
                     this.red = 0.575F * j;
                     this.green = 0.45F * j;
@@ -149,7 +152,8 @@ public class CPParticles {
     static class CyanPortalParticle extends PortalParticle {
 
             protected CyanPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-                    super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
                     float j = this.random.nextFloat() * 0.6F + 0.4F;
                     this.blue = 0.8F * j;
                     this.red = 0.2F * j;
@@ -174,7 +178,8 @@ public class CPParticles {
     static class GrayPortalParticle extends PortalParticle {
 
             protected GrayPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-                    super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
                     float j = this.random.nextFloat() * 0.6F + 0.4F;
                     this.red = this.green = this.blue = 0.5F * j;
             }
@@ -197,7 +202,8 @@ public class CPParticles {
     static class GreenPortalParticle extends PortalParticle {
 
         protected GreenPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = 0.2F * j;
             this.green = 0.5F * j;
@@ -222,7 +228,8 @@ public class CPParticles {
     static class LightBluePortalParticle extends PortalParticle {
 
         protected LightBluePortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = 0.6F * j;
             this.blue = 1.0F * j;
@@ -247,7 +254,8 @@ public class CPParticles {
     static class LightGrayPortalParticle extends PortalParticle {
 
         protected LightGrayPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = this.green = this.blue = 0.7F * j;
         }
@@ -270,7 +278,8 @@ public class CPParticles {
     static class LimePortalParticle extends PortalParticle {
 
         protected LimePortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = 0.5F * j;
             this.green = 1.0F * j;
@@ -295,7 +304,8 @@ public class CPParticles {
     static class MagentaPortalParticle extends PortalParticle {
 
         protected MagentaPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = 1.0F * j;
             this.green = 0.4F * j;
@@ -320,7 +330,8 @@ public class CPParticles {
     static class OrangePortalParticle extends PortalParticle {
 
         protected OrangePortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = 1.0F * j;
             this.green = 0.7F * j;
@@ -345,7 +356,8 @@ public class CPParticles {
     static class PinkPortalParticle extends PortalParticle {
 
         protected PinkPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = 1.0F * j;
             this.green = 0.6F * j;
@@ -370,7 +382,8 @@ public class CPParticles {
     static class RedPortalParticle extends PortalParticle {
 
         protected RedPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = 1.0F * j;
             this.green = 0.2F * j;
@@ -395,7 +408,8 @@ public class CPParticles {
     static class WhitePortalParticle extends PortalParticle {
 
         protected WhitePortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = this.green = this.blue = 1.0F * j;
         }
@@ -418,7 +432,8 @@ public class CPParticles {
     static class YellowPortalParticle extends PortalParticle {
 
         protected YellowPortalParticle(ClientWorld clientWorld, double d, double e, double f, double g, double h, double i, Sprite sprite) {
-            super(clientWorld, d, e, f, g, h, i, sprite);
+                    super(clientWorld, d, e, f, g, h, i);
+                    this.setSprite(sprite);
             float j = this.random.nextFloat() * 0.6F + 0.4F;
             this.red = 1.0F * j;
             this.green = 1.0F * j;

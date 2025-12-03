@@ -1,53 +1,50 @@
 {
   "schemaVersion": 1,
-  "id": "customportals",
+  "id": "${mod_id}",
   "custom": {
     "cardinal-components": [
-      "customportals:portals"
+      "${mod_id}:portals"
     ]
   },
-  "version": "${version}",
-
-  "name": "Custom Portals",
-  "description": "Build portals to anywhere out of any material!",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
   "authors": [
-    "Palyon"
+    "${mod_author}"
   ],
   "contact": {
-    "homepage": "https://www.curseforge.com/minecraft/mc-mods/custom-portals",
-    "sources": "https://github.com/Palyon-dev/CustomPortals",
-    "issues": "https://github.com/Palyon-dev/CustomPortals/issues"
+    "homepage": "${mod_homepage}",
+    "sources": "${mod_sources}",
+    "issues": "${mod_issues}"
   },
-
-  "license": "MIT",
-  "icon": "assets/customportals/icon.png",
-
+  "license": "${mod_license}",
+  "icon": "${mod_icon}",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.custom.portals.CustomPortals"
+      "${main_class}"
     ],
     "client": [
-      "dev.custom.portals.CustomPortalsClient"
+      "${client_class}"
     ],
     "cardinal-components-world": [
-      "dev.custom.portals.CustomPortals"
+      "${main_class}"
     ],
     "modmenu": [
-      "dev.custom.portals.config.ModMenuIntegration"
+      "${modmenu_class}"
     ]
   },
   "mixins": [
-    "customportals.mixins.json"
+    "${mod_id}.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.16.0",
-    "fabric": ">=0.100.2",
-    "minecraft": ">=1.21.5",
-    "java": ">=21",
+    "fabricloader": ">=${fabric_loader_version}",
+    "fabric": "${fabric_api_version}",
+    "minecraft": ">=${minecraft_version}",
+    "java": ">=${java_version}",
     "yet_another_config_lib_v3": "*"
   },
   "recommends": {
-    "modmenu": ">=16.0.0-rc.1"
+    "modmenu": ">=${modmenu_version}"
   }
 }

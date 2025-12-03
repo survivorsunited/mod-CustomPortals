@@ -23,7 +23,7 @@ public abstract class LevelLoadingScreenMixin extends Screen {
         super(NarratorManager.EMPTY);
     }
 
-    @Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true, require = 0)
     public void renderBackground(DrawContext drawContext, int i, int j, float f, CallbackInfo ci) {
         if (ClientUtil.transitionBackgroundSpriteModel != null) {
             ClientUtil.isTransitioning = true;

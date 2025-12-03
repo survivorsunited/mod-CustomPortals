@@ -1,9 +1,30 @@
 # Comprehensive Version Validation Script
 # Builds, validates, and tests server startup for all Minecraft versions in versions.json
+#
+# Usage:
+#   .\scripts\validate-all-versions.ps1                           # Validate all versions
+#   .\scripts\validate-all-versions.ps1 -Versions "1.21.8"       # Validate specific versions
+#   .\scripts\validate-all-versions.ps1 -SkipServer               # Build only, skip server tests
+#   .\scripts\validate-all-versions.ps1 -SkipBuild                # Server tests only, skip builds
+#   .\scripts\validate-all-versions.ps1 -CleanAll                 # Clean everything before building
+#   .\scripts\validate-all-versions.ps1 -CleanBuild                # Clean build artifacts only
+#   .\scripts\validate-all-versions.ps1 -CleanGradle              # Clean Gradle/Loom cache only
+#
+# Parameters:
+#   -Versions          : Array of specific versions to validate (default: all from versions.json)
+#   -SkipBuild         : Skip building, only validate existing JARs
+#   -SkipServer        : Skip server startup tests
+#   -CleanBuild        : Remove build/ directory before building
+#   -CleanGradle       : Remove Gradle cache and Loom cache before building
+#   -CleanAll          : Remove build artifacts, Gradle cache, and Loom cache (combines CleanBuild + CleanGradle)
+#   -ServerTimeout     : Timeout in seconds for server startup (default: 120)
 
 param(
     [switch]$SkipBuild,
     [switch]$SkipServer,
+    [switch]$CleanBuild,
+    [switch]$CleanGradle,
+    [switch]$CleanAll,
     [int]$ServerTimeout = 120,
     [string[]]$Versions = @()
 )
@@ -15,6 +36,22 @@ $env:Path = "$jdkPath\bin;" + $env:Path
 
 Write-Host "🔍 Version Validation Script" -ForegroundColor Cyan
 Write-Host "=" * 60 -ForegroundColor Cyan
+
+# Show cleanup options if any are set
+if ($CleanAll -or $CleanBuild -or $CleanGradle) {
+    Write-Host "🧹 Cleanup Options:" -ForegroundColor Yellow
+    if ($CleanAll) {
+        Write-Host "   - CleanAll: Removing build artifacts, Gradle cache, and Loom cache" -ForegroundColor Gray
+    } else {
+        if ($CleanBuild) {
+            Write-Host "   - CleanBuild: Removing build artifacts" -ForegroundColor Gray
+        }
+        if ($CleanGradle) {
+            Write-Host "   - CleanGradle: Removing Gradle and Loom cache" -ForegroundColor Gray
+        }
+    }
+    Write-Host ""
+}
 
 # Load versions.json
 $versionsJson = Get-Content "versions.json" | ConvertFrom-Json
@@ -71,6 +108,26 @@ foreach ($mcVersion in $allVersions) {
         # Use version-specific Gradle cache
         $gradleUserHome = "$PWD\.gradle-$mcVersion"
         $env:GRADLE_USER_HOME = $gradleUserHome
+        
+        # Cleanup based on flags
+        if ($CleanAll -or $CleanGradle) {
+            Write-Host "🧹 Removing version-specific Gradle cache: $gradleUserHome" -ForegroundColor Cyan
+            Remove-Item -Path $gradleUserHome -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        
+        if ($CleanAll -or $CleanBuild) {
+            Write-Host "🧹 Cleaning build artifacts..." -ForegroundColor Cyan
+            Remove-Item -Path "build" -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        
+        if ($CleanAll -or $CleanGradle) {
+            Write-Host "🧹 Cleaning Loom cache..." -ForegroundColor Cyan
+            Remove-Item -Path ".gradle/loom-cache" -Recurse -Force -ErrorAction SilentlyContinue
+            if (Test-Path $gradleUserHome) {
+                Remove-Item -Path "$gradleUserHome/loom-cache" -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            & ./gradlew --stop 2>&1 | Out-Null
+        }
         
         # Clean and build
         Write-Host "Running: ./gradlew clean build --no-daemon" -ForegroundColor Gray
@@ -323,8 +380,6 @@ foreach ($mcVersion in $allVersions) {
             
             # Analyze final log
             if (Test-Path $logFile) {
-                $finalLog = Get-Content $logFile -Raw
-                
                 # Final checks
                 if (-not $serverStarted) {
                     $versionResult.ErrorMessages += "Server did not start within timeout period"
@@ -398,8 +453,8 @@ if ($failedVersions.Count -gt 0) {
     Write-Host "Detailed errors:" -ForegroundColor Yellow
     foreach ($version in $failedVersions) {
         Write-Host "  ${version}:" -ForegroundColor Red
-        foreach ($error in $results[$version].ErrorMessages) {
-            Write-Host "    - $error" -ForegroundColor Gray
+        foreach ($errorMsg in $results[$version].ErrorMessages) {
+            Write-Host "    - $errorMsg" -ForegroundColor Gray
         }
     }
 }

@@ -101,25 +101,19 @@ jobs:
           echo "Files in build/libs:"
           ls -la build/libs/
           
-          # Find the main JAR (excluding sources and dev) - try exact match first, then pattern match
+          # Find the main JAR (excluding sources and dev) - MUST match exact version from gradle.properties
           ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
           
-          # If not found, try to find any JAR with the mod name (in case version format differs)
           if [ -z "$ORIGINAL_JAR" ]; then
-            echo "Exact match not found, trying pattern match..."
-            ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-*.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
-            if [ -n "$ORIGINAL_JAR" ]; then
-              # Extract actual version from found JAR filename
-              ACTUAL_VERSION=$(basename "$ORIGINAL_JAR" | sed "s/${MOD_NAME}-//" | sed "s/\.jar$//")
-              echo "Found JAR with version: $ACTUAL_VERSION (using this instead of $MOD_VERSION)"
-              MOD_VERSION="$ACTUAL_VERSION"
-            fi
-          fi
-          
-          if [ -z "$ORIGINAL_JAR" ]; then
-            echo "❌ No JAR file found"
+            echo "❌ No JAR file found with expected version"
             echo "Expected pattern: ${MOD_NAME}-${MOD_VERSION}.jar"
-            ls -la build/libs/
+            echo "MOD_VERSION from gradle.properties: ${MOD_VERSION}"
+            echo "MOD_NAME from gradle.properties: ${MOD_NAME}"
+            echo "Files in build/libs:"
+            ls -la build/libs/ || echo "build/libs does not exist"
+            echo ""
+            echo "ERROR: JAR version must match mod_version in gradle.properties exactly!"
+            echo "Make sure gradle.properties has: mod_version = ${MOD_VERSION}"
             exit 1
           fi
           

@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Gradle Build Standards for Fabric Mod
 
 ## Build Configuration

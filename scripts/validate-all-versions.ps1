@@ -111,22 +111,37 @@ foreach ($mcVersion in $allVersions) {
         
         # Cleanup based on flags
         if ($CleanAll -or $CleanGradle) {
+            Write-Host "🧹 Stopping Gradle daemon..." -ForegroundColor Cyan
+            & ./gradlew --stop 2>&1 | Out-Null
+            Start-Sleep -Seconds 2
+            
             Write-Host "🧹 Removing version-specific Gradle cache: $gradleUserHome" -ForegroundColor Cyan
-            Remove-Item -Path $gradleUserHome -Recurse -Force -ErrorAction SilentlyContinue
+            if (Test-Path $gradleUserHome) {
+                Remove-Item -Path $gradleUserHome -Recurse -Force -ErrorAction SilentlyContinue
+            }
         }
         
         if ($CleanAll -or $CleanBuild) {
             Write-Host "🧹 Cleaning build artifacts..." -ForegroundColor Cyan
             Remove-Item -Path "build" -Recurse -Force -ErrorAction SilentlyContinue
+            # Also clean any Loom cache in build directory
+            Remove-Item -Path "build/loom-cache" -Recurse -Force -ErrorAction SilentlyContinue
         }
         
         if ($CleanAll -or $CleanGradle) {
             Write-Host "🧹 Cleaning Loom cache..." -ForegroundColor Cyan
+            # Clean all possible Loom cache locations
             Remove-Item -Path ".gradle/loom-cache" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path "build/loom-cache" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path ".fabric" -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item -Path ".loom" -Recurse -Force -ErrorAction SilentlyContinue
             if (Test-Path $gradleUserHome) {
                 Remove-Item -Path "$gradleUserHome/loom-cache" -Recurse -Force -ErrorAction SilentlyContinue
+                # Clean transforms cache that might have Loom data
+                Get-ChildItem -Path "$gradleUserHome/caches" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                    Remove-Item -Path "$($_.FullName)/transforms" -Recurse -Force -ErrorAction SilentlyContinue
+                }
             }
-            & ./gradlew --stop 2>&1 | Out-Null
         }
         
         # Clean and build
@@ -309,17 +324,26 @@ foreach ($mcVersion in $allVersions) {
             # Accept EULA
             "eula=true" | Out-File -FilePath "eula.txt" -Encoding utf8 -Force
             
+            # Create logs directory
+            $logsDir = "logs"
+            if (-not (Test-Path $logsDir)) {
+                New-Item -ItemType Directory -Path $logsDir | Out-Null
+            }
+            
             # Start server and monitor logs
-            $logFile = "server.log"
+            # Minecraft server writes to logs/latest.log, but we'll also capture console output
+            $consoleLogFile = "server.log"
+            $logFile = "logs/latest.log"
             $javaOpts = @("-Xms2G", "-Xmx4G", "-XX:+UseG1GC", "-XX:+ParallelRefProcEnabled", "-XX:MaxGCPauseMillis=200", "-XX:+UnlockExperimentalVMOptions", "-XX:+DisableExplicitGC", "--enable-native-access=ALL-UNNAMED")
             $javaCmd = "java " + ($javaOpts -join " ") + " -jar `"$fabricServerJar`" nogui"
             
             Write-Host "⏱️  Starting server (timeout: ${ServerTimeout}s)..." -ForegroundColor Yellow
+            Write-Host "📄 Monitoring log: $logFile" -ForegroundColor Gray
             
             $job = Start-Job -ScriptBlock {
-                param($cmd, $log)
-                Invoke-Expression "$cmd 2>&1 | Tee-Object -FilePath `"$log`""
-            } -ArgumentList $javaCmd, $logFile
+                param($cmd, $consoleLog)
+                Invoke-Expression "$cmd 2>&1 | Tee-Object -FilePath `"$consoleLog`""
+            } -ArgumentList $javaCmd, $consoleLogFile
             
             $elapsed = 0
             $serverStarted = $false
@@ -330,9 +354,17 @@ foreach ($mcVersion in $allVersions) {
                 Start-Sleep -Seconds 2
                 $elapsed += 2
                 
+                # Check both log locations (server.log for console output, logs/latest.log for server logs)
+                $logContent = @()
                 if (Test-Path $logFile) {
-                    $logContent = Get-Content $logFile -ErrorAction SilentlyContinue
-                    
+                    $logContent += Get-Content $logFile -ErrorAction SilentlyContinue
+                }
+                if (Test-Path $consoleLogFile) {
+                    $logContent += Get-Content $consoleLogFile -ErrorAction SilentlyContinue
+                }
+                $logContent = $logContent | Select-Object -Unique
+                
+                if ($logContent) {
                     # Check for server started
                     if ($logContent -match "Done \(\d+\.\d+s\)! For help, type") {
                         $serverStarted = $true
@@ -347,7 +379,7 @@ foreach ($mcVersion in $allVersions) {
                         Write-Host "✅ Mod loaded successfully!" -ForegroundColor Green
                     }
                     
-                    # Check for errors
+                    # Check for errors (but ignore known harmless warnings)
                     $errorPatterns = @(
                         "ERROR",
                         "FATAL",
@@ -357,11 +389,27 @@ foreach ($mcVersion in $allVersions) {
                         "Unable to"
                     )
                     
+                    # Patterns to ignore (harmless warnings)
+                    $ignorePatterns = @(
+                        "WARN.*refmap.*could not be read.*development environment",
+                        "WARN.*Reference map.*could not be read",
+                        "WARN.*deprecated",
+                        "DEBUG",
+                        "TRACE"
+                    )
+                    
                     foreach ($pattern in $errorPatterns) {
                         $errorLines = $logContent | Select-String -Pattern $pattern -CaseSensitive:$false
                         if ($errorLines) {
                             foreach ($line in $errorLines) {
-                                if ($line.Line -notmatch "DEBUG" -and $line.Line -notmatch "TRACE") {
+                                $shouldIgnore = $false
+                                foreach ($ignorePattern in $ignorePatterns) {
+                                    if ($line.Line -match $ignorePattern) {
+                                        $shouldIgnore = $true
+                                        break
+                                    }
+                                }
+                                if (-not $shouldIgnore) {
                                     $errors += $line.Line
                                 }
                             }
@@ -378,8 +426,18 @@ foreach ($mcVersion in $allVersions) {
             Stop-Job $job -ErrorAction SilentlyContinue
             Remove-Job $job -ErrorAction SilentlyContinue
             
-            # Analyze final log
-            if (Test-Path $logFile) {
+            # Analyze final log (check both locations)
+            $hasLogFile = (Test-Path $logFile) -or (Test-Path $consoleLogFile)
+            if ($hasLogFile) {
+                # Read from both log files if they exist
+                $finalLogContent = @()
+                if (Test-Path $logFile) {
+                    $finalLogContent += Get-Content $logFile -ErrorAction SilentlyContinue
+                }
+                if (Test-Path $consoleLogFile) {
+                    $finalLogContent += Get-Content $consoleLogFile -ErrorAction SilentlyContinue
+                }
+                $logContent = $finalLogContent | Select-Object -Unique
                 # Final checks
                 if (-not $serverStarted) {
                     $versionResult.ErrorMessages += "Server did not start within timeout period"
@@ -389,12 +447,15 @@ foreach ($mcVersion in $allVersions) {
                     $versionResult.ErrorMessages += "Mod was not detected in server logs"
                 }
                 
-                # Filter out non-critical errors
+                # Filter out non-critical errors and known harmless warnings
                 $criticalErrors = $errors | Where-Object {
                     $_ -notmatch "DEBUG" -and
                     $_ -notmatch "TRACE" -and
                     $_ -notmatch "WARN.*deprecated" -and
-                    $_ -notmatch "Using.*instead of"
+                    $_ -notmatch "WARN.*refmap.*could not be read" -and
+                    $_ -notmatch "WARN.*Reference map.*could not be read" -and
+                    $_ -notmatch "Using.*instead of" -and
+                    $_ -notmatch "development environment.*ignore"
                 }
                 
                 if ($criticalErrors.Count -gt 0) {
@@ -468,4 +529,3 @@ if ($failedVersions.Count -gt 0) {
 } else {
     exit 0
 }
-

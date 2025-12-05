@@ -76,6 +76,9 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
          CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(blockPos);
          if (portal == null) return ActionResult.FAIL;
          portal.setSpawnPos(blockPos);
+         if (!world.isClient()) {
+            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld) world).getServer());
+         }
          if (world.isClient())
             playerEntity.sendMessage(Text.of("Set portal's spawn position to " + CustomPortals.blockPosToString(blockPos)), true);
          return ActionResult.SUCCESS;
@@ -211,9 +214,13 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       if (!state.get(LIT))
          return;
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
-      if(portal != null && entity.canUsePortals(false)) {
-         entity.tryUsePortal(this, pos);
-         ((EntityMixinAccess) entity).setInCustomPortal(portal);
+      if(portal != null) {
+         // Allow ItemEntity and FallingBlockEntity to use portals regardless of canUsePortals
+         boolean canUse = entity.canUsePortals(false) || entity instanceof net.minecraft.entity.ItemEntity || entity instanceof net.minecraft.entity.FallingBlockEntity;
+         if(canUse) {
+            entity.tryUsePortal(this, pos);
+            ((EntityMixinAccess) entity).setInCustomPortal(portal);
+         }
       }
       // For debugging purposes
       /*if(portal != null) {
@@ -402,4 +409,5 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       }
       return 0;
    }
+
 }

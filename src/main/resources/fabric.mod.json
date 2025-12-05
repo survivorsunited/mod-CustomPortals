@@ -1,11 +1,6 @@
 {
   "schemaVersion": 1,
   "id": "${mod_id}",
-  "custom": {
-    "cardinal-components": [
-      "${mod_id}:portals"
-    ]
-  },
   "version": "${mod_version}",
   "name": "${mod_name}",
   "description": "${mod_description}",
@@ -26,9 +21,6 @@
     ],
     "client": [
       "${client_class}"
-    ],
-    "cardinal-components-world": [
-      "${main_class}"
     ],
     "modmenu": [
       "${modmenu_class}"

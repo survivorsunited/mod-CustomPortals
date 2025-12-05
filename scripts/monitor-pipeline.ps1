@@ -3,7 +3,9 @@ param(
     [string]$Repository = "survivorsunited/mod-CustomPortals",
     [string]$Workflow = "build.yml",
     [int]$MaxWait = 1800,  # 30 minutes
-    [int]$CheckInterval = 30  # Check every 30 seconds
+    [int]$CheckInterval = 30,  # Check every 30 seconds
+    [int]$MaxErrors = 5,
+    [string]$GitHubToken = ""
 )
 
 $repoOwner = $Repository.Split('/')[0]
@@ -13,17 +15,23 @@ Write-Host "🔍 Monitoring pipeline for $Repository" -ForegroundColor Cyan
 Write-Host "   Workflow: $Workflow" -ForegroundColor Gray
 Write-Host "   Max wait: $MaxWait seconds ($([math]::Round($MaxWait/60, 1)) minutes)" -ForegroundColor Gray
 Write-Host "   Check interval: $CheckInterval seconds" -ForegroundColor Gray
+Write-Host "   Max errors: $MaxErrors" -ForegroundColor Gray
 Write-Host ""
 
 $elapsed = 0
 $lastStatus = ""
+$errorCount = 0
 
 while ($elapsed -lt $MaxWait) {
     try {
         # Get latest workflow run using GitHub API
         $headers = @{
-            "Accept" = "application/vnd.github+json"
+            "Accept"        = "application/vnd.github+json"
             "X-GitHub-Api-Version" = "2022-11-28"
+            "User-Agent"    = "CustomPortals-PipelineMonitor"
+        }
+        if ([string]::IsNullOrWhiteSpace($GitHubToken) -eq $false) {
+            $headers["Authorization"] = "Bearer $GitHubToken"
         }
         
         # Try to get workflow runs (public repo, no auth needed)
@@ -95,7 +103,12 @@ while ($elapsed -lt $MaxWait) {
             Write-Host "[$([math]::Round($elapsed/60, 1)) min] No workflow runs found" -ForegroundColor Yellow
         }
     } catch {
-        Write-Host "[$([math]::Round($elapsed/60, 1)) min] Error checking status: $($_.Exception.Message)" -ForegroundColor Red
+        $errorCount++
+        Write-Host "[$([math]::Round($elapsed/60, 1)) min] Error checking status ($errorCount/$MaxErrors): $($_.Exception.Message)" -ForegroundColor Red
+        if ($errorCount -ge $MaxErrors) {
+            Write-Host "`n❌ Exiting after reaching maximum consecutive errors." -ForegroundColor Red
+            exit 1
+        }
     }
     
     Start-Sleep -Seconds $CheckInterval
@@ -108,4 +121,8 @@ if ($elapsed -ge $MaxWait) {
 }
 
 exit 0
+
+
+
+
 

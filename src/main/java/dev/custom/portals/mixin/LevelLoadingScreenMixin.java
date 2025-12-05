@@ -23,8 +23,8 @@ public abstract class LevelLoadingScreenMixin extends Screen {
         super(NarratorManager.EMPTY);
     }
 
-    @Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true, require = 0)
-    public void renderBackground(DrawContext drawContext, int i, int j, float f, CallbackInfo ci) {
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0)
+    public void customportals$render(DrawContext drawContext, int i, int j, float f, CallbackInfo ci) {
         if (ClientUtil.transitionBackgroundSpriteModel != null) {
             ClientUtil.isTransitioning = true;
             if (!packetSent) {
@@ -35,8 +35,8 @@ public abstract class LevelLoadingScreenMixin extends Screen {
             ci.cancel();
         }
     }
-    @Inject(method = "close", at = @At("HEAD"))
-    public void close(CallbackInfo ci) {
+    @Inject(method = "removed", at = @At("HEAD"))
+    public void customportals$removed(CallbackInfo ci) {
         ClientUtil.isTransitioning = false;
         ClientPlayNetworking.send(new ScreenTransitionPayload(false));
         ClientUtil.transitionBackgroundSpriteModel = null;

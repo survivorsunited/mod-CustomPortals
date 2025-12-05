@@ -15,12 +15,17 @@ $env:Path = "$jdkPath\bin;" + $env:Path
 Write-Host "JAVA_HOME set to $jdkPath" -ForegroundColor Green
 
 # Always clean Loom cache when switching versions to avoid conflicts
-# Use version-specific Gradle user home to isolate caches
-$gradleUserHome = "$PWD\.gradle-$MinecraftVersion"
+# Use version-specific Gradle user home to isolate caches (store outside repo to avoid file locking issues)
+$gradleUserHome = Join-Path $env:USERPROFILE ".gradle-$MinecraftVersion"
 $env:GRADLE_USER_HOME = $gradleUserHome
 Write-Host "🧹 Using isolated Gradle cache for ${MinecraftVersion}: ${gradleUserHome}" -ForegroundColor Cyan
-# Clean entire version-specific cache to avoid conflicts
-Remove-Item -Path $gradleUserHome -Recurse -Force -ErrorAction SilentlyContinue
+if ($Clean) {
+    Write-Host "   Cleaning per-version Gradle cache (requested with -Clean)" -ForegroundColor Yellow
+    Remove-Item -Path $gradleUserHome -Recurse -Force -ErrorAction SilentlyContinue
+}
+if (-not (Test-Path $gradleUserHome)) {
+    New-Item -ItemType Directory -Path $gradleUserHome | Out-Null
+}
 ./gradlew --stop | Out-Null
 
 # Update gradle.properties with correct Minecraft version BEFORE building

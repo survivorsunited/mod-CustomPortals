@@ -1,20 +1,19 @@
 package dev.custom.portals;
 
 import dev.custom.portals.config.CPSettings;
-import dev.custom.portals.data.BasePortalComponent;
-import dev.custom.portals.data.WorldPortals;
+import dev.custom.portals.data.PortalStorage;
+import dev.custom.portals.data.PortalStorageManager;
 import dev.custom.portals.registry.CPBlocks;
 import dev.custom.portals.registry.CPItems;
 import dev.custom.portals.registry.CPParticles;
 import dev.custom.portals.util.DrawSpritePayload;
 import dev.custom.portals.util.EntityMixinAccess;
+import dev.custom.portals.util.PortalSyncPayload;
 import dev.custom.portals.util.ScreenTransitionPayload;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import org.ladysnake.cca.api.v3.world.WorldComponentFactoryRegistry;
-import org.ladysnake.cca.api.v3.world.WorldComponentInitializer;
-import org.ladysnake.cca.api.v3.component.ComponentRegistryV3;
-import org.ladysnake.cca.api.v3.component.ComponentKey;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.item.ItemGroup;
@@ -27,12 +26,11 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
-public class CustomPortals implements ModInitializer, WorldComponentInitializer {
+public class CustomPortals implements ModInitializer {
 
         public static final String MOD_ID = "customportals";
 
-        public static final ComponentKey<BasePortalComponent> PORTALS = ComponentRegistryV3.INSTANCE
-                .getOrCreate(Identifier.of("customportals:portals"), BasePortalComponent.class);
+        public static final PortalStorage PORTALS = new PortalStorage();
 
         public static final RegistryKey<ItemGroup> PORTALS_ITEM_GROUP = RegistryKey.of(RegistryKeys.ITEM_GROUP,
                 Identifier.of(CustomPortals.MOD_ID, "general"));
@@ -47,17 +45,16 @@ public class CustomPortals implements ModInitializer, WorldComponentInitializer 
                 CPItems.registerItems();
                 CPParticles.registerParticles();
                 PayloadTypeRegistry.playS2C().register(DrawSpritePayload.ID, DrawSpritePayload.CODEC);
+                PayloadTypeRegistry.playS2C().register(PortalSyncPayload.ID, PortalSyncPayload.CODEC);
                 PayloadTypeRegistry.playC2S().register(ScreenTransitionPayload.ID, ScreenTransitionPayload.CODEC);
                 ServerPlayNetworking.registerGlobalReceiver(ScreenTransitionPayload.ID, (payload, context) -> {
                         context.server().execute(() -> {
                                 ((EntityMixinAccess)context.player()).setInTransition(payload.isTransitioning());
                         });
                 });
-        }
-
-        @Override
-        public void registerWorldComponentFactories(WorldComponentFactoryRegistry registry) {
-                registry.register(PORTALS, WorldPortals.class, WorldPortals::new);
+                ServerLifecycleEvents.SERVER_STARTED.register(PortalStorageManager::initialize);
+                ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> PortalStorageManager.syncToPlayer(handler.player));
+                ServerLifecycleEvents.SERVER_STOPPED.register(server -> PortalStorageManager.clearServerState());
         }
 
         // for debugging purposes

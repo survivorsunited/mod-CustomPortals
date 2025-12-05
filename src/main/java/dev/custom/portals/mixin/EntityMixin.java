@@ -84,11 +84,9 @@ public abstract class EntityMixin implements EntityMixinAccess {
 
     @Unique
     public void setInCustomPortal(CustomPortal customPortal) {
-        if (this.portalManager != null) {
-            this.destPortal = customPortal.getLinked();
-            this.inCustomPortal = true;
-            this.portalColor = customPortal.getColor().id;
-        }
+        this.destPortal = customPortal.getLinked();
+        this.inCustomPortal = true;
+        this.portalColor = customPortal.getColor().id;
     }
 
     /*@Unique

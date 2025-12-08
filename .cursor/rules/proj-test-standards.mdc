@@ -1,0 +1,181 @@
+---
+alwaysApply: true
+---
+
+# Test Standards for Custom Portals Mod
+
+## Test Directory Structure
+```
+tests/
+├── 001-start-server.ps1      # Test server startup and world loading
+├── 002-portal-creation.ps1   # Test portal creation (future)
+├── 003-portal-teleport.ps1   # Test portal teleportation (future)
+└── README.md                  # Test documentation
+```
+
+## Test Script Naming Convention
+- Format: `###-test-name.ps1`
+- Numbers: 001, 002, 003, etc. (sequential)
+- Name: Descriptive kebab-case name
+- Extension: `.ps1` (PowerShell)
+
+## Test Execution Requirements
+
+### Required Test Scripts
+1. **001-start-server.ps1** - **MANDATORY**
+   - Tests server startup
+   - Validates world loading
+   - Checks for portal mod errors
+   - Must pass before deployment
+
+### Test Script Structure
+```powershell
+# Test Name: Brief description
+# Purpose: What this test validates
+# Expected: What should happen
+# Failure: What indicates failure
+
+param(
+    [string]$MinecraftVersion = "1.21.8",
+    [int]$TimeoutSeconds = 120
+)
+
+# Test implementation using scripts/start-server.ps1
+# Must exit with 0 on success, non-zero on failure
+```
+
+## Test Execution in Pipeline
+
+### GitHub Actions Integration
+Tests MUST be executed in the CI/CD pipeline:
+- **Build Stage**: Run tests after build completes
+- **Test Stage**: Execute all test scripts
+- **Fail on Error**: Pipeline must fail if any test fails
+
+### Pipeline Test Command
+```yaml
+- name: Run Tests
+  run: |
+    cd tests
+    ./001-start-server.ps1 -MinecraftVersion "${{ matrix.minecraft-version }}"
+```
+
+## Test Script Requirements
+
+### Must Use Existing Scripts
+- **ALWAYS** use `scripts/start-server.ps1` for server operations
+- **DO NOT** duplicate server startup logic
+- **DO NOT** create new server startup scripts
+- Reuse existing infrastructure
+
+### Test Validation
+Each test must check:
+1. ✅ Server starts successfully
+2. ✅ World loads without errors
+3. ✅ Mod loads correctly
+4. ✅ No portal-related errors in logs
+5. ✅ No PersistentState errors
+6. ✅ No Mixin errors
+
+### Log Checking
+Test scripts must:
+- Monitor server logs for errors
+- Check for specific error patterns
+- Validate success indicators
+- Report clear pass/fail status
+
+### Exit Codes
+- **0**: Test passed
+- **1**: Test failed
+- **2**: Test error/exception
+
+### Output Format
+```
+✅ TEST PASSED: [Test Name]
+or
+❌ TEST FAILED: [Test Name]
+   Reason: [Why it failed]
+```
+
+## Test Documentation
+
+### README.md Requirements
+- List all tests
+- Document what each test validates
+- Provide execution instructions
+- Include troubleshooting guide
+
+### Test Results
+- Tests must output results to `tests/results/`
+- Include timestamp in result files
+- Log full output for debugging
+
+## Pipeline Integration Standards
+
+### Pre-Build Tests
+- Compilation validation
+- Code quality checks
+- Dependency verification
+
+### Post-Build Tests
+- Server startup test (001-start-server.ps1) - **REQUIRED**
+- World loading validation
+- Mod functionality tests
+
+### Release Tests
+- All pre-build tests
+- All post-build tests
+- Multi-version testing (1.21.5-1.21.10)
+- Cross-platform validation
+
+## Test Environment
+
+### Required Setup
+- Java 21 installed
+- PowerShell 7+ available
+- Server scripts in `scripts/` folder
+- Build artifacts in `build/libs/`
+
+### Test Isolation
+- Each test uses isolated server instance
+- Tests clean up after execution
+- No test dependencies on other tests
+
+## Continuous Integration
+
+### When Tests Run
+1. **On every push**: Run smoke tests (001-start-server.ps1)
+2. **On pull requests**: Run full test suite
+3. **Before release**: Run all tests on all versions
+4. **Nightly**: Run extended test suite
+
+### Test Failure Handling
+- Pipeline stops on first test failure
+- Test results reported to PR/commit
+- Logs attached for debugging
+- Notify maintainers on failure
+
+## Best Practices
+
+### Test Development
+- ✅ Write tests before fixing bugs (when possible)
+- ✅ Test one thing per test script
+- ✅ Make tests fast and reliable
+- ✅ Use descriptive test names
+- ✅ Document test purpose
+
+### Test Maintenance
+- ✅ Keep tests up to date with code changes
+- ✅ Remove obsolete tests
+- ✅ Update tests when requirements change
+- ✅ Review test coverage regularly
+
+### Test Debugging
+- ✅ Include detailed error messages
+- ✅ Log all test execution steps
+- ✅ Save server logs on failure
+- ✅ Provide clear failure reasons
+
+## Example Test Script
+
+See `tests/001-start-server.ps1` for reference implementation.

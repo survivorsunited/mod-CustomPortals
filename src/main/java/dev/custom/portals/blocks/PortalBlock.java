@@ -15,6 +15,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 
 import dev.custom.portals.CustomPortals;
+import dev.custom.portals.data.PortalStorageManager;
 import dev.custom.portals.util.EntityMixinAccess;
 import dev.custom.portals.registry.CPItems;
 import dev.custom.portals.registry.CPParticles;
@@ -77,7 +78,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
          if (portal == null) return ActionResult.FAIL;
          portal.setSpawnPos(blockPos);
          if (!world.isClient()) {
-            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld) world).getServer());
+            PortalStorageManager.syncToAll((ServerWorld) world);
          }
          if (world.isClient())
             playerEntity.sendMessage(Text.of("Set portal's spawn position to " + CustomPortals.blockPosToString(blockPos)), true);
@@ -125,7 +126,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       if(portal != null) {
          CustomPortals.PORTALS.get(world).unregisterPortal(portal);
          if(!world.isClient())
-            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
+            PortalStorageManager.syncToAll((ServerWorld)world);
       }
       return state;
    }
@@ -183,7 +184,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
                return super.getStateForNeighborUpdate(state, worldView, scheduledTickView, pos, direction, posFrom, newState, random);
             CustomPortals.PORTALS.get(world).unregisterPortal(portal);
             if(!world.isClient())
-               CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
+               PortalStorageManager.syncToAll((ServerWorld)world);
             dropCatalyst(portal, world);
          }
          return Blocks.AIR.getDefaultState();

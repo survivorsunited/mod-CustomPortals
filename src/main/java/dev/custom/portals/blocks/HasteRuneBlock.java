@@ -4,6 +4,7 @@ import java.util.List;
 
 import dev.custom.portals.CustomPortals;
 import dev.custom.portals.data.CustomPortal;
+import dev.custom.portals.data.PortalStorageManager;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -23,13 +24,13 @@ public class HasteRuneBlock extends AbstractRuneBlock {
     public void registerOnPortal(CustomPortal portal, World world) {
         portal.addHaste();
         if (!world.isClient())
-            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
+            PortalStorageManager.syncToAll((ServerWorld)world);
     }
 
     @Override
     public void unregisterOnPortal(CustomPortal portal, World world) {
         portal.removeHaste();
         if (!world.isClient())
-            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
+            PortalStorageManager.syncToAll((ServerWorld)world);
     }
 }

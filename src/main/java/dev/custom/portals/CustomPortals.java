@@ -10,7 +10,6 @@ import dev.custom.portals.util.DrawSpritePayload;
 import dev.custom.portals.util.EntityMixinAccess;
 import dev.custom.portals.util.PortalSyncPayload;
 import dev.custom.portals.util.ScreenTransitionPayload;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -52,9 +51,7 @@ public class CustomPortals implements ModInitializer {
                                 ((EntityMixinAccess)context.player()).setInTransition(payload.isTransitioning());
                         });
                 });
-                ServerLifecycleEvents.SERVER_STARTED.register(PortalStorageManager::initialize);
                 ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> PortalStorageManager.syncToPlayer(handler.player));
-                ServerLifecycleEvents.SERVER_STOPPED.register(server -> PortalStorageManager.clearServerState());
         }
 
         // for debugging purposes

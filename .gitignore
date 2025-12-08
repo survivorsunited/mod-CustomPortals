@@ -34,3 +34,6 @@ run2/
 
 test-server-*/
 test-server/
+
+# test output artifacts
+tests/test-output/

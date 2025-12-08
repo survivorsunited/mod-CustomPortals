@@ -5,6 +5,7 @@ import java.util.List;
 import dev.custom.portals.CustomPortals;
 import dev.custom.portals.config.CPSettings;
 import dev.custom.portals.data.CustomPortal;
+import dev.custom.portals.data.PortalStorageManager;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -25,7 +26,7 @@ public class StrongEnhancerRuneBlock extends AbstractRuneBlock {
         portal.addStrongEnhancer();
         CustomPortals.PORTALS.get(world).tryWithAll(portal);
         if (!world.isClient())
-            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
+            PortalStorageManager.syncToAll((ServerWorld)world);
     }
     
     @Override
@@ -35,6 +36,6 @@ public class StrongEnhancerRuneBlock extends AbstractRuneBlock {
             CustomPortals.PORTALS.get(world).tryWithAll(portal.getLinked());
         CustomPortals.PORTALS.get(world).tryWithAll(portal);
         if (!world.isClient())
-            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
+            PortalStorageManager.syncToAll((ServerWorld)world);
     }
 }

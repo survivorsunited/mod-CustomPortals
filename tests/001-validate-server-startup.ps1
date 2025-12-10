@@ -92,12 +92,12 @@ while ((Get-Date) -lt $startTime.AddSeconds($TimeoutSeconds)) {
     
     $logContent = Get-Content -Path $serverLogFile -Tail 100 -ErrorAction SilentlyContinue
     
-    if ($logContent -match "Done.*For help" -and -not $serverStarted) {
+    if (($logContent -match "Done.*For help" -or $logContent -match "Done \(") -and -not $serverStarted) {
         Write-TestLog "Server started"
         $serverStarted = $true
     }
     
-    if (($logContent -match "Loading dimension" -or $logContent -match "Preparing start region") -and -not $worldLoaded) {
+    if (($logContent -match "Loading dimension" -or $logContent -match "Preparing start region" -or $logContent -match "Preparing level" -or $logContent -match "Preparing spawn area") -and -not $worldLoaded -and $serverStarted) {
         Write-TestLog "World loaded"
         $worldLoaded = $true
     }

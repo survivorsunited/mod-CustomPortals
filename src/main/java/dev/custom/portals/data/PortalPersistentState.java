@@ -60,6 +60,6 @@ public class PortalPersistentState extends PersistentState {
 
     public static PortalPersistentState getOrCreate(ServerWorld world) {
         PersistentStateManager manager = world.getPersistentStateManager();
-        return manager.getOrCreate(TYPE, DATA_KEY);
+        return manager.getOrCreate(TYPE);
     }
 }

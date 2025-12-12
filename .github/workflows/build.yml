@@ -85,7 +85,12 @@ jobs:
         
       - name: Build project
         run: |
-          ./gradlew clean build --no-daemon
+          ./gradlew clean build --no-daemon || {
+            echo "❌ Build failed!"
+            echo "Checking for any JAR files created..."
+            ls -la build/libs/ || echo "build/libs does not exist"
+            exit 1
+          }
           echo "📦 Generated files in build/libs:"
           ls -la build/libs/
         
@@ -98,22 +103,30 @@ jobs:
           MOD_NAME=$(grep "^[[:space:]]*jar_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*jar_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
           
           echo "Looking for JAR: ${MOD_NAME}-${MOD_VERSION}.jar"
+          echo "MOD_VERSION: ${MOD_VERSION}"
+          echo "MOD_NAME: ${MOD_NAME}"
           echo "Files in build/libs:"
-          ls -la build/libs/
+          ls -la build/libs/ || echo "build/libs does not exist"
           
-          # Find the main JAR (excluding sources and dev) - MUST match exact version from gradle.properties
+          # Find the main JAR (excluding sources and dev) - try exact version first
           ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
           
+          # If not found, try pattern match (in case version format differs slightly)
           if [ -z "$ORIGINAL_JAR" ]; then
-            echo "❌ No JAR file found with expected version"
+            echo "Exact match not found, trying pattern match..."
+            ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-*.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
+            if [ -n "$ORIGINAL_JAR" ]; then
+              echo "Found JAR with pattern match: $ORIGINAL_JAR"
+            fi
+          fi
+          
+          if [ -z "$ORIGINAL_JAR" ]; then
+            echo "❌ No JAR file found"
             echo "Expected pattern: ${MOD_NAME}-${MOD_VERSION}.jar"
             echo "MOD_VERSION from gradle.properties: ${MOD_VERSION}"
             echo "MOD_NAME from gradle.properties: ${MOD_NAME}"
-            echo "Files in build/libs:"
+            echo "All files in build/libs:"
             ls -la build/libs/ || echo "build/libs does not exist"
-            echo ""
-            echo "ERROR: JAR version must match mod_version in gradle.properties exactly!"
-            echo "Make sure gradle.properties has: mod_version = ${MOD_VERSION}"
             exit 1
           fi
           

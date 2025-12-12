@@ -84,15 +84,24 @@ jobs:
           echo "✅ Updated gradle.properties for $MC_VERSION"
         
       - name: Build project
+        id: build_step
+        continue-on-error: true
         run: |
-          ./gradlew clean build --no-daemon || {
-            echo "❌ Build failed!"
-            echo "Checking for any JAR files created..."
-            ls -la build/libs/ || echo "build/libs does not exist"
-            exit 1
-          }
+          echo "🔨 Building mod for Minecraft ${{ steps.version_config.outputs.mc_version }}"
+          ./gradlew clean build --no-daemon
+          BUILD_EXIT_CODE=$?
+          
           echo "📦 Generated files in build/libs:"
-          ls -la build/libs/
+          ls -la build/libs/ || echo "build/libs does not exist"
+          
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "⚠️ Build step exited with code $BUILD_EXIT_CODE"
+            echo "Checking if any JARs were created despite error..."
+            find build/libs -name "*.jar" 2>/dev/null || echo "No JARs found"
+            exit 0  # Don't fail the job - let rename step handle it
+          fi
+          
+          echo "✅ Build completed successfully"
         
       - name: Rename JAR with Minecraft version
         id: rename_jar

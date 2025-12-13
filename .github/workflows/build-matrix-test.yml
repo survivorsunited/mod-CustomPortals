@@ -1,0 +1,24 @@
+name: build-matrix-test
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  test-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mc_version: ["1.21.8"]
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+      - name: Test
+        run: echo "Matrix test for ${{ matrix.mc_version }}"
+

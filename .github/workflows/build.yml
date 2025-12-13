@@ -14,10 +14,6 @@ on:
 jobs:
   build-matrix:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mc_version: ["1.21.8"]
-      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,7 +38,7 @@ jobs:
       - name: Extract version config
         id: version_config
         run: |
-          MC_VERSION="${{ matrix.mc_version }}"
+          MC_VERSION="1.21.8"
           CONFIG=$(jq -r ".[\"$MC_VERSION\"]" versions.json)
           YARN_MAPPINGS=$(echo "$CONFIG" | jq -r '.yarn_mappings')
           LOADER_VERSION=$(echo "$CONFIG" | jq -r '.loader_version')

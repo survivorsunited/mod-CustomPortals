@@ -195,7 +195,6 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: build-matrix
     if: always()  # Run even if some matrix jobs fail
     steps:
       - name: Checkout code
@@ -295,7 +294,6 @@ jobs:
 
   auto-version:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [build-matrix]
     runs-on: ubuntu-latest
     outputs:
       version_changed: ${{ steps.version_changed.outputs.changed }}
@@ -591,7 +589,7 @@ jobs:
           channel: release
 
   release:
-    needs: [auto-version, build-matrix]
+    needs: [auto-version]
     if: needs.auto-version.outputs.version_changed == 'true'
     runs-on: ubuntu-latest
     permissions:

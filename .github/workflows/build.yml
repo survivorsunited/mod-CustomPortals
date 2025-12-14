@@ -163,12 +163,6 @@ jobs:
           retention-days: 7
         continue-on-error: true
 
-      - name: Setup PowerShell
-        uses: azure/setup-powershell@v1
-        with:
-          version: "7"
-        continue-on-error: true
-
       - name: Run tests
         shell: pwsh
         continue-on-error: true

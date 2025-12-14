@@ -216,12 +216,9 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
          return;
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
       if(portal != null) {
-         // Allow ItemEntity and FallingBlockEntity to use portals regardless of canUsePortals
-         boolean canUse = entity.canUsePortals(false) || entity instanceof net.minecraft.entity.ItemEntity || entity instanceof net.minecraft.entity.FallingBlockEntity;
-         if(canUse) {
-            entity.tryUsePortal(this, pos);
-            ((EntityMixinAccess) entity).setInCustomPortal(portal);
-         }
+         // Allow all entities (including items) to use portals
+         entity.tryUsePortal(this, pos);
+         ((EntityMixinAccess) entity).setInCustomPortal(portal);
       }
       // For debugging purposes
       /*if(portal != null) {

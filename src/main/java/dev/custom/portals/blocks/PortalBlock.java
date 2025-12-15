@@ -217,12 +217,10 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
       if(portal != null) {
          // Allow all entities (including items) to use portals
-         // Set inCustomPortal directly to bypass canUsePortals checks
+         // Set inCustomPortal first - this makes canUsePortals return true via mixin
          ((EntityMixinAccess) entity).setInCustomPortal(portal);
-         // Only call tryUsePortal for entities that can use portals normally
-         if (entity.canUsePortals(false)) {
-            entity.tryUsePortal(this, pos);
-         }
+         // Now tryUsePortal will succeed because canUsePortals returns true
+         entity.tryUsePortal(this, pos);
       }
       // For debugging purposes
       /*if(portal != null) {

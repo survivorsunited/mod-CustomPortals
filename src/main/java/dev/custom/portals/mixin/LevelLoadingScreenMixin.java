@@ -38,7 +38,9 @@ public abstract class LevelLoadingScreenMixin extends Screen {
     @Inject(method = "removed", at = @At("HEAD"))
     public void customportals$removed(CallbackInfo ci) {
         ClientUtil.isTransitioning = false;
-        ClientPlayNetworking.send(new ScreenTransitionPayload(false));
+        if (ClientPlayNetworking.canSend(ScreenTransitionPayload.ID)) {
+            ClientPlayNetworking.send(new ScreenTransitionPayload(false));
+        }
         ClientUtil.transitionBackgroundSpriteModel = null;
         packetSent = false;
     }

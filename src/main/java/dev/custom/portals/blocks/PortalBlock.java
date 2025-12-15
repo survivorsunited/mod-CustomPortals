@@ -214,6 +214,8 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
    public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler entityCollisionHandler, boolean bl) {
       if (!state.get(LIT))
          return;
+      if (world.isClient())
+         return;
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
       if(portal != null && portal.hasLinked()) {
          // Allow all entities (including items) to use portals
@@ -222,12 +224,6 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
          // Now tryUsePortal will succeed because canUsePortals returns true
          entity.tryUsePortal(this, pos);
       }
-      // For debugging purposes
-      /*if(portal != null) {
-         if(portal.hasLinked())
-            System.out.println("Linked Portal at " + portal.getLinked().getSpawnPos().getX() + ", " + portal.getLinked().getSpawnPos().getY() + ", " + portal.getLinked().getSpawnPos().getZ());
-         else System.out.println("Portal is not linked!");
-      } else System.out.println("No portal found!");*/
    }
    
    @Environment(EnvType.CLIENT)

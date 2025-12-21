@@ -319,7 +319,8 @@ jobs:
       - name: Get current version
         id: current_version
         run: |
-          CURRENT_VERSION=$(grep "^mod_version=" gradle.properties | cut -d'=' -f2)
+          # Handle spaces around equals sign in gradle.properties
+          CURRENT_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
           echo "Current version: $CURRENT_VERSION"
           
@@ -343,7 +344,8 @@ jobs:
       - name: Update gradle.properties
         run: |
           NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
-          sed -i "s/^mod_version=.*/mod_version=$NEW_VERSION/" gradle.properties
+          # Handle spaces around equals sign - preserve existing format
+          sed -i "s/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*.*/mod_version = $NEW_VERSION/" gradle.properties
           echo "Updated gradle.properties with version $NEW_VERSION"
           
       - name: Check if version changed
@@ -413,10 +415,15 @@ jobs:
       - name: Extract properties from gradle.properties
         id: properties
         run: |
-          echo "modName=$(./gradlew -q printProperty -Pproperty=jar_name)" >> $GITHUB_OUTPUT
-          echo "modTitle=$(./gradlew -q printProperty -Pproperty=mod_name)" >> $GITHUB_OUTPUT
-          echo "modDescription=$(./gradlew -q printProperty -Pproperty=mod_description)" >> $GITHUB_OUTPUT
-          echo "modVersion=$(./gradlew -q printProperty -Pproperty=mod_version)" >> $GITHUB_OUTPUT
+          # Handle spaces around equals sign in gradle.properties
+          MOD_NAME=$(grep "^[[:space:]]*jar_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*jar_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+          MOD_TITLE=$(grep "^[[:space:]]*mod_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+          MOD_DESCRIPTION=$(grep "^[[:space:]]*mod_description[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_description[[:space:]]*=[[:space:]]*//')
+          MOD_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+          echo "modName=$MOD_NAME" >> $GITHUB_OUTPUT
+          echo "modTitle=$MOD_TITLE" >> $GITHUB_OUTPUT
+          echo "modDescription=$MOD_DESCRIPTION" >> $GITHUB_OUTPUT
+          echo "modVersion=$MOD_VERSION" >> $GITHUB_OUTPUT
           
       - name: Build all Minecraft versions
         run: |
@@ -634,10 +641,15 @@ jobs:
       - name: Extract properties from gradle.properties
         id: properties
         run: |
-          echo "modName=$(./gradlew -q printProperty -Pproperty=jar_name)" >> $GITHUB_OUTPUT
-          echo "modTitle=$(./gradlew -q printProperty -Pproperty=mod_name)" >> $GITHUB_OUTPUT
-          echo "modDescription=$(./gradlew -q printProperty -Pproperty=mod_description)" >> $GITHUB_OUTPUT
-          echo "modVersion=$(./gradlew -q printProperty -Pproperty=mod_version)" >> $GITHUB_OUTPUT
+          # Handle spaces around equals sign in gradle.properties
+          MOD_NAME=$(grep "^[[:space:]]*jar_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*jar_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+          MOD_TITLE=$(grep "^[[:space:]]*mod_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+          MOD_DESCRIPTION=$(grep "^[[:space:]]*mod_description[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_description[[:space:]]*=[[:space:]]*//')
+          MOD_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+          echo "modName=$MOD_NAME" >> $GITHUB_OUTPUT
+          echo "modTitle=$MOD_TITLE" >> $GITHUB_OUTPUT
+          echo "modDescription=$MOD_DESCRIPTION" >> $GITHUB_OUTPUT
+          echo "modVersion=$MOD_VERSION" >> $GITHUB_OUTPUT
           
       - name: List collected JARs
         run: |

@@ -10,6 +10,12 @@ alwaysApply: true
 - PowerShell scripts for automation
 - Always test builds before deployment
 
+## MANDATORY BUILD RULE
+- **CRITICAL**: ALWAYS run `.\build.ps1` immediately after making ANY code changes to Java files, resources, or configuration
+- **NO EXCEPTIONS**: Build must be executed before considering any coding task complete
+- **Verification**: Confirm build succeeds and versioned JAR is created in `build/libs/`
+- This ensures compilation errors are caught immediately and the mod is ready for testing
+
 ## PowerShell Scripts
 - **build.ps1** (root directory) - Main build script with optional server start
   - Parameters: `-StartServer`, `-Clean`, `-MinecraftVersion "1.21.6"`

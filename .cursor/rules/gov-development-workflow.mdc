@@ -18,6 +18,12 @@ alwaysApply: true
 4. **Localization**: Update language files in `src/main/resources/assets/{modid}/lang/`
 5. **Documentation**: Update Markdown files in `docs/docs/`
 
+## CRITICAL RULE: Always Build After Code Changes
+- **MANDATORY**: ALWAYS run `.\build.ps1` (or `./build.sh` on Linux/Mac) immediately after making ANY code changes
+- **NO EXCEPTIONS**: Build must be executed before considering the task complete
+- **Build verification**: Verify build succeeds and JAR is created
+- This ensures compilation errors are caught immediately and the mod is ready to test
+
 ## Testing Workflow
 ### Standard Testing Process
 1. **Build Project**: 

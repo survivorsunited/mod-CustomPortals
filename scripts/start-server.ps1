@@ -113,12 +113,18 @@ while ($true) {
     # Set console encoding for proper character handling
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
     
-    # Run the server command and capture ALL output (stdout and stderr) to both console and log file
-    $result = pwsh -NoProfile -Command @"
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-& $LaunchCmd 2>&1 | Tee-Object -FilePath '$LogFile' -Append
-"@
+    # Build the full Java command as an array for proper argument parsing
+    $javaArgs = $JavaOpts + @("-jar", $JarFile, "nogui")
     
+    # Run the server directly - output goes to both console and log file
+    # Execute java command and pipe output to Tee-Object to write to both console and log
+    & java $javaArgs 2>&1 | ForEach-Object {
+        $line = $_
+        Write-Host $line
+        Add-Content -Path $LogFile -Value $line -Encoding UTF8
+    }
+    
+    # Capture exit code from the last command
     $exitCode = $LASTEXITCODE
     
     if ($exitCode -eq 1) {

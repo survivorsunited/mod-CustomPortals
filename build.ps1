@@ -4,8 +4,52 @@
 param(
     [switch]$StartServer,
     [switch]$Clean,
-    [string]$MinecraftVersion = "1.21.5"
+    [switch]$NoVersionBump,
+    [string]$MinecraftVersion = "1.21.8"
 )
+
+# Function to bump patch version
+function Bump-PatchVersion {
+    $gradlePropsPath = "gradle.properties"
+    if (-not (Test-Path $gradlePropsPath)) {
+        Write-Host "⚠️  gradle.properties not found" -ForegroundColor Yellow
+        return
+    }
+    
+    $gradleProps = Get-Content $gradlePropsPath -Raw
+    
+    # Extract current version
+    if ($gradleProps -match "mod_version\s*=\s*([0-9]+\.[0-9]+\.[0-9]+)") {
+        $currentVersion = $matches[1]
+        $versionParts = $currentVersion -split '\.'
+        
+        if ($versionParts.Count -eq 3) {
+            $major = [int]$versionParts[0]
+            $minor = [int]$versionParts[1]
+            $patch = [int]$versionParts[2]
+            
+            # Increment patch version
+            $newPatch = $patch + 1
+            $newVersion = "$major.$minor.$newPatch"
+            
+            # Update gradle.properties
+            $gradleProps = $gradleProps -replace "mod_version\s*=\s*[0-9]+\.[0-9]+\.[0-9]+", "mod_version = $newVersion"
+            $gradleProps | Set-Content $gradlePropsPath -NoNewline
+            
+            Write-Host "📈 Version bumped: $currentVersion → $newVersion" -ForegroundColor Green
+        } else {
+            Write-Host "⚠️  Could not parse version format: $currentVersion" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "⚠️  Could not find mod_version in gradle.properties" -ForegroundColor Yellow
+    }
+}
+
+# Bump patch version before building (unless NoVersionBump is specified)
+if (-not $NoVersionBump) {
+    Write-Host "🔄 Bumping patch version..." -ForegroundColor Cyan
+    Bump-PatchVersion
+}
 
 # Set the correct JDK 21 path
 $jdkPath = "C:\data\apps\#dev\jdk\jdk-21.0.7"

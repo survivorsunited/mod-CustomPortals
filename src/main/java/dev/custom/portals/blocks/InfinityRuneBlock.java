@@ -4,7 +4,6 @@ import java.util.List;
 
 import dev.custom.portals.CustomPortals;
 import dev.custom.portals.data.CustomPortal;
-import dev.custom.portals.data.PortalStorageManager;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -24,8 +23,8 @@ public class InfinityRuneBlock extends AbstractRuneBlock {
     public void registerOnPortal(CustomPortal portal, World world) {
         portal.addInfinity();
         CustomPortals.PORTALS.get(world).tryWithAll(portal);
-        if (!world.isClient())
-            PortalStorageManager.syncToAll((ServerWorld)world);
+        if (!world.isClient)
+            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
     }
 
     @Override
@@ -34,7 +33,7 @@ public class InfinityRuneBlock extends AbstractRuneBlock {
         if (portal.hasLinked())
             CustomPortals.PORTALS.get(world).tryWithAll(portal.getLinked());
         CustomPortals.PORTALS.get(world).tryWithAll(portal);
-        if (!world.isClient())
-            PortalStorageManager.syncToAll((ServerWorld)world);
+        if (!world.isClient)
+            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
     }
 }

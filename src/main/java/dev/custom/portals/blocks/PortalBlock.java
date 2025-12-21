@@ -15,7 +15,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 
 import dev.custom.portals.CustomPortals;
-import dev.custom.portals.data.PortalStorageManager;
 import dev.custom.portals.util.EntityMixinAccess;
 import dev.custom.portals.registry.CPItems;
 import dev.custom.portals.registry.CPParticles;
@@ -77,10 +76,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
          CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(blockPos);
          if (portal == null) return ActionResult.FAIL;
          portal.setSpawnPos(blockPos);
-         if (!world.isClient()) {
-            PortalStorageManager.syncToAll((ServerWorld) world);
-         }
-         if (world.isClient())
+         if (world.isClient)
             playerEntity.sendMessage(Text.of("Set portal's spawn position to " + CustomPortals.blockPosToString(blockPos)), true);
          return ActionResult.SUCCESS;
       }
@@ -125,8 +121,8 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
       if(portal != null) {
          CustomPortals.PORTALS.get(world).unregisterPortal(portal);
-         if(!world.isClient())
-            PortalStorageManager.syncToAll((ServerWorld)world);
+         if(!world.isClient)
+            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
       }
       return state;
    }
@@ -183,8 +179,8 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
             if (newState.getBlock().getTranslationKey().equals(portal.getFrameId()))
                return super.getStateForNeighborUpdate(state, worldView, scheduledTickView, pos, direction, posFrom, newState, random);
             CustomPortals.PORTALS.get(world).unregisterPortal(portal);
-            if(!world.isClient())
-               PortalStorageManager.syncToAll((ServerWorld)world);
+            if(!world.isClient)
+               CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
             dropCatalyst(portal, world);
          }
          return Blocks.AIR.getDefaultState();
@@ -211,19 +207,21 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       }
    }
 
-   public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler entityCollisionHandler, boolean bl) {
+   @Override
+   public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler entityCollisionHandler) {
       if (!state.get(LIT))
          return;
-      if (world.isClient())
-         return;
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
-      if(portal != null && portal.hasLinked()) {
-         // Allow all entities (including items) to use portals
-         // Set inCustomPortal first - this makes canUsePortals return true via mixin
-         ((EntityMixinAccess) entity).setInCustomPortal(portal);
-         // Now tryUsePortal will succeed because canUsePortals returns true
+      if(portal != null && entity.canUsePortals(false)) {
          entity.tryUsePortal(this, pos);
+         ((EntityMixinAccess) entity).setInCustomPortal(portal);
       }
+      // For debugging purposes
+      /*if(portal != null) {
+         if(portal.hasLinked())
+            System.out.println("Linked Portal at " + portal.getLinked().getSpawnPos().getX() + ", " + portal.getLinked().getSpawnPos().getY() + ", " + portal.getLinked().getSpawnPos().getZ());
+         else System.out.println("Portal is not linked!");
+      } else System.out.println("No portal found!");*/
    }
    
    @Environment(EnvType.CLIENT)
@@ -405,5 +403,4 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       }
       return 0;
    }
-
 }

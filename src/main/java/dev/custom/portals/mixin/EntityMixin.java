@@ -19,7 +19,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import dev.custom.portals.util.EntityMixinAccess;
 import net.minecraft.entity.Entity;
@@ -66,14 +65,6 @@ public abstract class EntityMixin implements EntityMixinAccess {
         }
     }
 
-    @Inject(method = "canUsePortals", at = @At("HEAD"), cancellable = true)
-    protected void canUsePortals(boolean bl, CallbackInfoReturnable<Boolean> cir) {
-        // Allow all entities in custom portals to use portals (for teleportation)
-        if (this.inCustomPortal) {
-            cir.setReturnValue(true);
-        }
-    }
-
     @Inject(method = "tickPortalTeleportation", at = @At("TAIL"))
     protected void tickPortalTeleportation(CallbackInfo ci) {
         if (world instanceof ServerWorld) {
@@ -93,9 +84,11 @@ public abstract class EntityMixin implements EntityMixinAccess {
 
     @Unique
     public void setInCustomPortal(CustomPortal customPortal) {
-        this.destPortal = customPortal.getLinked();
-        this.inCustomPortal = true;
-        this.portalColor = customPortal.getColor().id;
+        if (this.portalManager != null) {
+            this.destPortal = customPortal.getLinked();
+            this.inCustomPortal = true;
+            this.portalColor = customPortal.getColor().id;
+        }
     }
 
     /*@Unique

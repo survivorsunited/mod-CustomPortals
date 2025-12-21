@@ -4,7 +4,6 @@ import dev.custom.portals.CustomPortals;
 import dev.custom.portals.blocks.AbstractRuneBlock;
 import dev.custom.portals.config.CPSettings;
 import dev.custom.portals.data.CustomPortal;
-import dev.custom.portals.data.PortalStorageManager;
 import dev.custom.portals.registry.CPBlocks;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -227,8 +226,8 @@ public class PortalHelper {
                         ((AbstractRuneBlock)block).registerOnPortal(portal, world);
             }
         }
-        if(!world.isClient())
-            PortalStorageManager.syncToAll((ServerWorld)world);
+        if(!world.isClient)
+            CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
         return true;
     }
 

@@ -1,9 +1,10 @@
 package dev.custom.portals.data;
 
+import org.ladysnake.cca.api.v3.component.ComponentV3;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 
-public interface BasePortalComponent {
+public interface BasePortalComponent extends ComponentV3 {
     PortalRegistry getPortalRegistry();
     CustomPortal getPortalFromPos(BlockPos pos);
     //  boolean settingsChanged();

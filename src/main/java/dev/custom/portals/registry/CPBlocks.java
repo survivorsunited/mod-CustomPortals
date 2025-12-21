@@ -32,14 +32,6 @@ public class CPBlocks {
                 return (Boolean)state.get(Properties.LIT) ? 11 : 0;
         };
 
-        /**
-         * Luminance function that always returns 0 (no light emission).
-         * Used for the black portal to prevent it from emitting light.
-         */
-        private static final ToIntFunction<BlockState> NO_LUMINANCE = (state) -> {
-                return 0;
-        };
-
         private static final ToIntFunction<BlockState> RUNE_LUMINANCE = (state) -> {
                 return 2;
         };
@@ -64,7 +56,7 @@ public class CPBlocks {
         // Portal Blocks
         public static final Block BLACK_PORTAL = new PortalBlock(
                 Block.Settings.create().registryKey(getKey("black_portal")).mapColor(MapColor.BLACK).nonOpaque().noCollision().ticksRandomly()
-                .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(NO_LUMINANCE));
+                .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
         public static final Block BLUE_PORTAL = new PortalBlock(
                 Block.Settings.create().registryKey(getKey("blue_portal")).mapColor(MapColor.BLUE).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));

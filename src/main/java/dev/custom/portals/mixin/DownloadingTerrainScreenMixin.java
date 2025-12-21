@@ -5,26 +5,40 @@ import dev.custom.portals.util.*;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.DownloadingTerrainScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.world.LevelLoadingScreen;
 import net.minecraft.client.util.NarratorManager;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(LevelLoadingScreen.class)
-public abstract class LevelLoadingScreenMixin extends Screen {
+import java.util.function.BooleanSupplier;
+
+@Mixin(DownloadingTerrainScreen.class)
+public abstract class DownloadingTerrainScreenMixin extends Screen {
+
+    @Shadow
+    private final BooleanSupplier shouldClose;
+    @Shadow
+    private final DownloadingTerrainScreen.WorldEntryReason worldEntryReason;
+    @Shadow
+    private final long loadStartTime;
+
     @Unique
     private boolean packetSent = false;
 
-    protected LevelLoadingScreenMixin() {
+    public DownloadingTerrainScreenMixin(BooleanSupplier booleanSupplier, DownloadingTerrainScreen.WorldEntryReason worldEntryReason) {
         super(NarratorManager.EMPTY);
+        this.shouldClose = booleanSupplier;
+        this.worldEntryReason = worldEntryReason;
+        this.loadStartTime = System.currentTimeMillis();
     }
 
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0)
-    public void customportals$render(DrawContext drawContext, int i, int j, float f, CallbackInfo ci) {
+    @Inject(method = "renderBackground", at = @At("HEAD"), cancellable = true)
+    public void renderBackground(DrawContext drawContext, int i, int j, float f, CallbackInfo ci) {
         if (ClientUtil.transitionBackgroundSpriteModel != null) {
             ClientUtil.isTransitioning = true;
             if (!packetSent) {
@@ -35,12 +49,10 @@ public abstract class LevelLoadingScreenMixin extends Screen {
             ci.cancel();
         }
     }
-    @Inject(method = "removed", at = @At("HEAD"))
-    public void customportals$removed(CallbackInfo ci) {
+    @Inject(method = "close", at = @At("HEAD"))
+    public void close(CallbackInfo ci) {
         ClientUtil.isTransitioning = false;
-        if (ClientPlayNetworking.canSend(ScreenTransitionPayload.ID)) {
-            ClientPlayNetworking.send(new ScreenTransitionPayload(false));
-        }
+        ClientPlayNetworking.send(new ScreenTransitionPayload(false));
         ClientUtil.transitionBackgroundSpriteModel = null;
         packetSent = false;
     }

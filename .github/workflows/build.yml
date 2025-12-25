@@ -279,20 +279,20 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-  update-modrinth-description:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: deploy-docs
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Update Modrinth project description
-        shell: pwsh
-        env:
-          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-        run: ./scripts/update-modrinth.ps1
+  # update-modrinth-description:
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   needs: deploy-docs
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       
+  #     - name: Update Modrinth project description
+  #       shell: pwsh
+  #       env:
+  #         MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+  #         PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  #       run: ./scripts/update-modrinth.ps1
 
   auto-version:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -579,24 +579,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Publish to Modrinth
-        uses: cloudnode-pro/modrinth-publish@v2
-        with:
-          token: ${{ secrets.MODRINTH_TOKEN }}
-          project: ${{ secrets.PROJECT_ID }}
-          loaders: fabric
-          files: ${{ steps.collect_jars.outputs.jars }}
-          version: ${{ steps.release_version.outputs.version }}
-          changelog: ${{ steps.changelog.outputs.changelog }}
-          game-versions: |-
-            1.21.5
-            1.21.6
-            1.21.7
-            1.21.8
-            1.21.9
-            1.21.10
-          featured: true
-          channel: release
+      # - name: Publish to Modrinth
+      #   uses: cloudnode-pro/modrinth-publish@v2
+      #   with:
+      #     token: ${{ secrets.MODRINTH_TOKEN }}
+      #     project: ${{ secrets.PROJECT_ID }}
+      #     loaders: fabric
+      #     files: ${{ steps.collect_jars.outputs.jars }}
+      #     version: ${{ steps.release_version.outputs.version }}
+      #     changelog: ${{ steps.changelog.outputs.changelog }}
+      #     game-versions: |-
+      #       1.21.5
+      #       1.21.6
+      #       1.21.7
+      #       1.21.8
+      #       1.21.9
+      #       1.21.10
+      #     featured: true
+      #     channel: release
 
   release:
     needs: [auto-version, build-matrix]
@@ -725,21 +725,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Publish to Modrinth
-        uses: cloudnode-pro/modrinth-publish@v2
-        with:
-          token: ${{ secrets.MODRINTH_TOKEN }}
-          project: ${{ secrets.PROJECT_ID }}
-          loaders: fabric
-          files: ${{ steps.collect_jars.outputs.jars }}
-          version: ${{ steps.release_version.outputs.version }}
-          changelog: ${{ steps.changelog.outputs.changelog }}
-          game-versions: |-
-            1.21.5
-            1.21.6
-            1.21.7
-            1.21.8
-            1.21.9
-            1.21.10
-          featured: true
-          channel: release
+      # - name: Publish to Modrinth
+      #   uses: cloudnode-pro/modrinth-publish@v2
+      #   with:
+      #     token: ${{ secrets.MODRINTH_TOKEN }}
+      #     project: ${{ secrets.PROJECT_ID }}
+      #     loaders: fabric
+      #     files: ${{ steps.collect_jars.outputs.jars }}
+      #     version: ${{ steps.release_version.outputs.version }}
+      #     changelog: ${{ steps.changelog.outputs.changelog }}
+      #     game-versions: |-
+      #       1.21.5
+      #       1.21.6
+      #       1.21.7
+      #       1.21.8
+      #       1.21.9
+      #       1.21.10
+      #     featured: true
+      #     channel: release

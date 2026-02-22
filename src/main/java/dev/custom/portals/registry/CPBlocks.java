@@ -1,5 +1,6 @@
 package dev.custom.portals.registry;
 
+import java.lang.reflect.Constructor;
 import java.util.function.ToIntFunction;
 
 import dev.custom.portals.CustomPortals;
@@ -40,6 +41,22 @@ public class CPBlocks {
                 return 2;
         };
 
+        private static Block createPortalBlock(Block.Settings settings) {
+                try {
+                        Class<?> cl = Class.forName("dev.custom.portals.blocks.PortalBlock21_9");
+                        Constructor<?> c = cl.getConstructor(Block.Settings.class);
+                        return (Block) c.newInstance(settings);
+                } catch (Throwable t1) {
+                        try {
+                                Class<?> cl = Class.forName("dev.custom.portals.blocks.PortalBlock5Arg");
+                                Constructor<?> c = cl.getConstructor(Block.Settings.class);
+                                return (Block) c.newInstance(settings);
+                        } catch (Throwable t2) {
+                                return new PortalBlock(settings);
+                        }
+                }
+        }
+
         // Runes
         public static final Block HASTE_RUNE_BLOCK = new HasteRuneBlock(
                 Block.Settings.create().registryKey(getKey("haste_rune_block")).sounds(BlockSoundGroup.AMETHYST_CLUSTER)
@@ -58,52 +75,52 @@ public class CPBlocks {
                 .nonOpaque().luminance(RUNE_LUMINANCE).noCollision().strength(0.3F));
 
         // Portal Blocks
-        public static final Block BLACK_PORTAL = new PortalBlock(
+        public static final Block BLACK_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("black_portal")).mapColor(MapColor.BLACK).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(NO_LUMINANCE));
-        public static final Block BLUE_PORTAL = new PortalBlock(
+        public static final Block BLUE_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("blue_portal")).mapColor(MapColor.BLUE).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block BROWN_PORTAL = new PortalBlock(
+        public static final Block BROWN_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("brown_portal")).mapColor(MapColor.BROWN).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block CYAN_PORTAL = new PortalBlock(
+        public static final Block CYAN_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("cyan_portal")).mapColor(MapColor.CYAN).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block GRAY_PORTAL = new PortalBlock(
+        public static final Block GRAY_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("gray_portal")).mapColor(MapColor.GRAY).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block GREEN_PORTAL = new PortalBlock(
+        public static final Block GREEN_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("green_portal")).mapColor(MapColor.GREEN).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block LIGHT_BLUE_PORTAL = new PortalBlock(
+        public static final Block LIGHT_BLUE_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("light_blue_portal")).mapColor(MapColor.LIGHT_BLUE).nonOpaque().noCollision()
                 .ticksRandomly().strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block LIGHT_GRAY_PORTAL = new PortalBlock(
+        public static final Block LIGHT_GRAY_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("light_gray_portal")).mapColor(MapColor.LIGHT_GRAY).nonOpaque().noCollision()
                 .ticksRandomly().strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block LIME_PORTAL = new PortalBlock(
+        public static final Block LIME_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("lime_portal")).mapColor(MapColor.LIME).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block MAGENTA_PORTAL = new PortalBlock(
+        public static final Block MAGENTA_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("magenta_portal")).mapColor(MapColor.MAGENTA).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block ORANGE_PORTAL = new PortalBlock(
+        public static final Block ORANGE_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("orange_portal")).mapColor(MapColor.ORANGE).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block PINK_PORTAL = new PortalBlock(
+        public static final Block PINK_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("pink_portal")).mapColor(MapColor.PINK).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block PURPLE_PORTAL = new PortalBlock(
+        public static final Block PURPLE_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("purple_portal")).mapColor(MapColor.PURPLE).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block RED_PORTAL = new PortalBlock(
+        public static final Block RED_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("red_portal")).mapColor(MapColor.RED).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block WHITE_PORTAL = new PortalBlock(
+        public static final Block WHITE_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("white_portal")).mapColor(MapColor.WHITE).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
-        public static final Block YELLOW_PORTAL = new PortalBlock(
+        public static final Block YELLOW_PORTAL = createPortalBlock(
                 Block.Settings.create().registryKey(getKey("yellow_portal")).mapColor(MapColor.YELLOW).nonOpaque().noCollision().ticksRandomly()
                 .strength(-1.0F).sounds(BlockSoundGroup.GLASS).luminance(STATE_TO_LUMINANCE));
 

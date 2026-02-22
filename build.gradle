@@ -3,6 +3,17 @@ plugins {
 	id 'maven-publish'
 }
 
+def mcVersion = project.minecraft_version
+def useLevelLoadingScreen = mcVersion.startsWith("1.21.") && Integer.parseInt(mcVersion.substring("1.21.".length())) >= 9
+
+if (useLevelLoadingScreen) {
+	sourceSets.main.java.srcDirs += "src/main/java-1.21.9"
+	sourceSets.main.java.exclude "**/DownloadingTerrainScreenMixin.java"
+	sourceSets.main.java.exclude "**/ServerPlayerEntityMixin.java"
+	sourceSets.main.java.exclude "**/CPParticles.java"
+	sourceSets.main.java.exclude "**/PortalBlock5Arg.java"
+}
+
 archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
@@ -56,9 +67,30 @@ dependencies {
 
 processResources {
 	inputs.property "version", project.version
+	inputs.property "minecraft_version", project.minecraft_version
 
 	filesMatching("fabric.mod.json") {
 		expand "version": project.version
+	}
+
+	doLast {
+		def mixins = useLevelLoadingScreen
+			? ["EntityMixin", "ServerPlayerEntityMixin21_9", "TeleportTargetAccessor"]
+			: ["EntityMixin", "ServerPlayerEntityMixin", "TeleportTargetAccessor"]
+		def client = useLevelLoadingScreen
+			? ["ClientPlayerEntityMixin", "InGameHudMixin", "LevelLoadingScreenMixin"]
+			: ["ClientPlayerEntityMixin", "InGameHudMixin", "DownloadingTerrainScreenMixin"]
+		def config = [
+			required: true,
+			minVersion: "0.8",
+			package: "dev.custom.portals.mixin",
+			compatibilityLevel: "JAVA_21",
+			mixins: mixins,
+			client: client,
+			server: [],
+			injectors: [defaultRequire: 1]
+		]
+		file("${destinationDir}/customportals.mixins.json").text = groovy.json.JsonOutput.toJson(config)
 	}
 }
 

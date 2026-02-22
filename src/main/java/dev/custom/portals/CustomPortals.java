@@ -5,7 +5,7 @@ import dev.custom.portals.data.BasePortalComponent;
 import dev.custom.portals.data.WorldPortals;
 import dev.custom.portals.registry.CPBlocks;
 import dev.custom.portals.registry.CPItems;
-import dev.custom.portals.registry.CPParticles;
+import dev.custom.portals.registry.CPParticlesConstants;
 import dev.custom.portals.util.DrawSpritePayload;
 import dev.custom.portals.util.EntityMixinAccess;
 import dev.custom.portals.util.ScreenTransitionPayload;
@@ -45,7 +45,7 @@ public class CustomPortals implements ModInitializer, WorldComponentInitializer 
                 CPSettings.load();
                 CPBlocks.registerBlocks();
                 CPItems.registerItems();
-                CPParticles.registerParticles();
+                CPParticlesConstants.registerParticles();
                 PayloadTypeRegistry.playS2C().register(DrawSpritePayload.ID, DrawSpritePayload.CODEC);
                 PayloadTypeRegistry.playC2S().register(ScreenTransitionPayload.ID, ScreenTransitionPayload.CODEC);
                 ServerPlayNetworking.registerGlobalReceiver(ScreenTransitionPayload.ID, (payload, context) -> {

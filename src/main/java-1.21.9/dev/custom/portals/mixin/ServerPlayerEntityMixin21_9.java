@@ -1,15 +1,24 @@
 package dev.custom.portals.mixin;
 
-import java.util.Iterator;
-
 import com.mojang.authlib.GameProfile;
-
-import net.minecraft.entity.player.PlayerPosition;
+import dev.custom.portals.util.EntityMixinAccess;
+import dev.custom.portals.mixin.TeleportTargetAccessor;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPosition;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.PlayerManager;
+import net.minecraft.server.network.ServerPlayNetworkHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.profiler.Profilers;
+import net.minecraft.world.TeleportTarget;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldProperties;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -17,21 +26,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import dev.custom.portals.util.EntityMixinAccess;
-import dev.custom.portals.mixin.TeleportTargetAccessor;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.TeleportTarget;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldProperties;
-
 @Mixin(ServerPlayerEntity.class)
-public abstract class ServerPlayerEntityMixin extends PlayerEntity {
+public abstract class ServerPlayerEntityMixin21_9 extends PlayerEntity {
 
     @Shadow
     private boolean inTeleportationState;
@@ -56,22 +52,16 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
     @Shadow
     public abstract CommonPlayerSpawnInfo createCommonPlayerSpawnInfo(ServerWorld serverWorld);
 
-    public ServerPlayerEntityMixin(MinecraftServer minecraftServer, ServerWorld serverWorld, GameProfile gameProfile) {
+    public ServerPlayerEntityMixin21_9(MinecraftServer minecraftServer, ServerWorld serverWorld, GameProfile gameProfile) {
         super(serverWorld, gameProfile);
     }
 
-    /* This is necessary to avoid unwanted side effects from using the normal teleportTo(),
-     * such as how moving from the end to the overworld causes the credits to play and
-     * resets the player's position to the world spawn. Most of this is simply copied from
-     * vanilla code.
-     */
     @Inject(method = "teleportTo", at = @At("HEAD"), cancellable = true)
-    public void telportTo(TeleportTarget teleportTarget, CallbackInfoReturnable<Entity> cir) {
+    public void customPortals$teleportTo(TeleportTarget teleportTarget, CallbackInfoReturnable<Entity> cir) {
         if (this.isRemoved())
             cir.setReturnValue(null);
         ServerWorld serverWorld = teleportTarget.world();
         ServerWorld serverWorld2 = this.getWorld();
-        RegistryKey<World> registryKey = serverWorld2.getRegistryKey();
         if (((EntityMixinAccess)this).isInCustomPortal()) {
             ServerPlayerEntity thisPlayer = (ServerPlayerEntity)(Object)this;
             this.inTeleportationState = true;
@@ -87,7 +77,7 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
             profiler.pop();
             profiler.push("placing");
             this.setServerWorld(serverWorld);
-            this.networkHandler.requestTeleport(PlayerPosition.fromTeleportTarget(teleportTarget), ((TeleportTargetAccessor) (Object) teleportTarget).customPortals$getRelatives());
+            this.networkHandler.requestTeleport(EntityPosition.fromTeleportTarget(teleportTarget), ((TeleportTargetAccessor) (Object) teleportTarget).customPortals$getRelatives());
             this.networkHandler.syncWithPlayerPosition();
             serverWorld.onDimensionChanged(thisPlayer);
             profiler.pop();
@@ -96,7 +86,6 @@ public abstract class ServerPlayerEntityMixin extends PlayerEntity {
             playerManager.sendWorldInfo(thisPlayer, serverWorld);
             playerManager.sendPlayerStatus(thisPlayer);
             playerManager.sendStatusEffects(thisPlayer);
-            // Apparently this line means "play the teleport sound effect." Minecraft try to have readable code challenge (impossible)
             this.networkHandler.sendPacket(new WorldEventS2CPacket(1032, BlockPos.ORIGIN, 0, false));
             this.syncedExperience = -1;
             this.syncedHealth = -1.0F;

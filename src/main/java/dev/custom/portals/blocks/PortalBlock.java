@@ -17,7 +17,7 @@ import net.minecraft.util.math.random.Random;
 import dev.custom.portals.CustomPortals;
 import dev.custom.portals.util.EntityMixinAccess;
 import dev.custom.portals.registry.CPItems;
-import dev.custom.portals.registry.CPParticles;
+import dev.custom.portals.registry.CPParticlesConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.entity.BlockEntity;
@@ -76,7 +76,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
          CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(blockPos);
          if (portal == null) return ActionResult.FAIL;
          portal.setSpawnPos(blockPos);
-         if (world.isClient)
+         if (world.isClient())
             playerEntity.sendMessage(Text.of("Set portal's spawn position to " + CustomPortals.blockPosToString(blockPos)), true);
          return ActionResult.SUCCESS;
       }
@@ -121,7 +121,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
       if(portal != null) {
          CustomPortals.PORTALS.get(world).unregisterPortal(portal);
-         if(!world.isClient)
+         if(!world.isClient())
             CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
       }
       return state;
@@ -179,7 +179,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
             if (newState.getBlock().getTranslationKey().equals(portal.getFrameId()))
                return super.getStateForNeighborUpdate(state, worldView, scheduledTickView, pos, direction, posFrom, newState, random);
             CustomPortals.PORTALS.get(world).unregisterPortal(portal);
-            if(!world.isClient)
+            if(!world.isClient())
                CustomPortals.PORTALS.get(world).syncWithAll(((ServerWorld)world).getServer());
             dropCatalyst(portal, world);
          }
@@ -207,21 +207,14 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       }
    }
 
-   @Override
-   public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler entityCollisionHandler) {
+   protected void doOnEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
       if (!state.get(LIT))
          return;
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
-      if(portal != null && entity.canUsePortals(false)) {
+      if (portal != null && entity.canUsePortals(false)) {
          entity.tryUsePortal(this, pos);
          ((EntityMixinAccess) entity).setInCustomPortal(portal);
       }
-      // For debugging purposes
-      /*if(portal != null) {
-         if(portal.hasLinked())
-            System.out.println("Linked Portal at " + portal.getLinked().getSpawnPos().getX() + ", " + portal.getLinked().getSpawnPos().getY() + ", " + portal.getLinked().getSpawnPos().getZ());
-         else System.out.println("Portal is not linked!");
-      } else System.out.println("No portal found!");*/
    }
    
    @Environment(EnvType.CLIENT)
@@ -251,37 +244,37 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
             j = (double)(random.nextFloat() * 2.0F * (float)k);
          }
          switch(this.getDefaultMapColor().id) {
-            case 29: world.addParticleClient(CPParticles.BLACK_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 29: world.addParticleClient(CPParticlesConstants.BLACK_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 25: world.addParticleClient(CPParticles.BLUE_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 25: world.addParticleClient(CPParticlesConstants.BLUE_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 26: world.addParticleClient(CPParticles.BROWN_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 26: world.addParticleClient(CPParticlesConstants.BROWN_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 23: world.addParticleClient(CPParticles.CYAN_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 23: world.addParticleClient(CPParticlesConstants.CYAN_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 21: world.addParticleClient(CPParticles.GRAY_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 21: world.addParticleClient(CPParticlesConstants.GRAY_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 27: world.addParticleClient(CPParticles.GREEN_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 27: world.addParticleClient(CPParticlesConstants.GREEN_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 17: world.addParticleClient(CPParticles.LIGHT_BLUE_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 17: world.addParticleClient(CPParticlesConstants.LIGHT_BLUE_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 22: world.addParticleClient(CPParticles.LIGHT_GRAY_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 22: world.addParticleClient(CPParticlesConstants.LIGHT_GRAY_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 19: world.addParticleClient(CPParticles.LIME_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 19: world.addParticleClient(CPParticlesConstants.LIME_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 16: world.addParticleClient(CPParticles.MAGENTA_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 16: world.addParticleClient(CPParticlesConstants.MAGENTA_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 15: world.addParticleClient(CPParticles.ORANGE_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 15: world.addParticleClient(CPParticlesConstants.ORANGE_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 20: world.addParticleClient(CPParticles.PINK_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 20: world.addParticleClient(CPParticlesConstants.PINK_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
             case 24: world.addParticleClient(ParticleTypes.PORTAL, d, e, f, g, h, j);
             break;
-            case 28: world.addParticleClient(CPParticles.RED_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 28: world.addParticleClient(CPParticlesConstants.RED_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 8: world.addParticleClient(CPParticles.WHITE_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 8: world.addParticleClient(CPParticlesConstants.WHITE_PORTAL_PARTICLE, d, e, f, g, h, j);
             break;
-            case 18: world.addParticleClient(CPParticles.YELLOW_PORTAL_PARTICLE, d, e, f, g, h, j);
+            case 18: world.addParticleClient(CPParticlesConstants.YELLOW_PORTAL_PARTICLE, d, e, f, g, h, j);
          }
       }
    

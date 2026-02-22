@@ -2,7 +2,7 @@ package dev.custom.portals;
 
 import dev.custom.portals.registry.CPBlocks;
 import dev.custom.portals.registry.CPItems;
-import dev.custom.portals.registry.CPParticles;
+import dev.custom.portals.registry.CPParticleFactoryRegistration;
 import dev.custom.portals.util.ClientUtil;
 import dev.custom.portals.util.DrawSpritePayload;
 import dev.custom.portals.util.PortalHelper;
@@ -14,7 +14,7 @@ public class CustomPortalsClient implements ClientModInitializer {
     public void onInitializeClient() {
         CPBlocks.setBlockRenderLayers();
         CPItems.registerItemTooltips();
-        CPParticles.registerFactoryRegistries();
+        CPParticleFactoryRegistration.register();
         ClientPlayNetworking.registerGlobalReceiver(DrawSpritePayload.ID, (payload, context) -> {
             context.client().execute(() -> {
                 ClientUtil.transitionBackgroundSpriteModel = payload.colorId() == 0 ? null : PortalHelper.getPortalBlockFromColorId(payload.colorId());

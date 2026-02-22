@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mc_version: ["1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10"]
+        mc_version: ["1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"]
       fail-fast: false
     steps:
       - name: Checkout code
@@ -430,7 +430,7 @@ jobs:
           MOD_VERSION="${{ steps.properties.outputs.modVersion }}"
           MOD_NAME="${{ steps.properties.outputs.modName }}"
           
-          for MC_VERSION in "1.21.5" "1.21.6" "1.21.7" "1.21.8" "1.21.9" "1.21.10"; do
+          for MC_VERSION in "1.21.5" "1.21.6" "1.21.7" "1.21.8" "1.21.9" "1.21.10" "1.21.11"; do
             echo "📦 Building for Minecraft $MC_VERSION"
             
             CONFIG=$(jq -r ".[\"$MC_VERSION\"]" versions.json)
@@ -497,7 +497,7 @@ jobs:
             
             # Validate we have JARs for all expected versions
             JAR_COUNT=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | wc -l)
-            EXPECTED_VERSIONS=6
+            EXPECTED_VERSIONS=7
             if [ "$JAR_COUNT" -lt "$EXPECTED_VERSIONS" ]; then
               echo "⚠️ Warning: Expected $EXPECTED_VERSIONS JARs but found $JAR_COUNT"
               echo "Found JARs:"
@@ -588,15 +588,16 @@ jobs:
       #     files: ${{ steps.collect_jars.outputs.jars }}
       #     version: ${{ steps.release_version.outputs.version }}
       #     changelog: ${{ steps.changelog.outputs.changelog }}
-      #     game-versions: |-
-      #       1.21.5
-      #       1.21.6
-      #       1.21.7
-      #       1.21.8
-      #       1.21.9
-      #       1.21.10
-      #     featured: true
-      #     channel: release
+#     game-versions: |-
+#       1.21.5
+#       1.21.6
+#       1.21.7
+#       1.21.8
+#       1.21.9
+#       1.21.10
+#       1.21.11
+#     featured: true
+#     channel: release
 
   release:
     needs: [auto-version, build-matrix]
@@ -741,5 +742,6 @@ jobs:
       #       1.21.8
       #       1.21.9
       #       1.21.10
+      #       1.21.11
       #     featured: true
       #     channel: release

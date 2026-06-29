@@ -41,6 +41,7 @@ import net.minecraft.world.*;
 import net.minecraft.world.block.WireOrientation;
 import net.minecraft.world.dimension.NetherPortal;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
@@ -88,7 +89,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       if(portal == null)
          return;
       if(portal.isInterdimensional()) {
-         if (portal.getLinked().getDimensionId().equals("minecraft:the_nether") && world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING) && random.nextInt(2000) < world.getDifficulty().getId()) {
+         if (portal.getLinked().getDimensionId().equals("minecraft:the_nether") && world.getGameRules().get(GameRules.SPAWN_MOBS) && random.nextInt(2000) < world.getDifficulty().getId()) {
             while(world.getBlockState(pos).isOf(this)) {
                pos = pos.down();
             }
@@ -100,7 +101,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
                }
             }
          }
-         if (portal.getLinked().getDimensionId().equals("minecraft:the_end") && world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING) && random.nextInt(2000) < world.getDifficulty().getId()) {
+         if (portal.getLinked().getDimensionId().equals("minecraft:the_end") && world.getGameRules().get(GameRules.SPAWN_MOBS) && random.nextInt(2000) < world.getDifficulty().getId()) {
             while(world.getBlockState(pos).isOf(this)) {
                pos = pos.down();
             }
@@ -391,7 +392,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       CustomPortal destPortal = ((EntityMixinAccess)entity).getDestPortal();
       if (entity instanceof PlayerEntity playerEntity && destPortal != null) {
          if (CPSettings.instance().alwaysHaste == CPSettings.HasteEnum.CREATIVE)
-            return Math.max(1, playerEntity.getAbilities().invulnerable ? serverWorld.getGameRules().getInt(GameRules.PLAYERS_NETHER_PORTAL_CREATIVE_DELAY) : destPortal.getPlayerTeleportDelay());
+            return Math.max(1, playerEntity.getAbilities().invulnerable ? serverWorld.getGameRules().get(GameRules.PLAYERS_NETHER_PORTAL_CREATIVE_DELAY) : destPortal.getPlayerTeleportDelay());
          else return destPortal.getPlayerTeleportDelay();
       }
       return 0;

@@ -3,7 +3,7 @@
     "yarn_mappings": "1.21.11+build.3",
     "loader_version": "0.17.3",
     "fabric_version": "0.141.3+1.21.11",
-    "loom_version": "1.12.0-alpha.25",
+    "loom_version": "1.13.3",
     "gradle_version": "8.14",
     "java_version": 21
   }

@@ -23,7 +23,7 @@ $gradleProps = $gradleProps -replace "minecraft_version\s*=\s*[^\r\n]*", "minecr
 $gradleProps = $gradleProps -replace "yarn_mappings\s*=\s*[^\r\n]*", "yarn_mappings=1.21.11+build.3"
 $gradleProps = $gradleProps -replace "loader_version\s*=\s*[^\r\n]*", "loader_version=0.17.3"
 $gradleProps = $gradleProps -replace "fabric_loader_version\s*=\s*[^\r\n]*", "fabric_loader_version=0.17.3"
-$gradleProps = $gradleProps -replace "loom_version\s*=\s*[^\r\n]*", "loom_version=1.12.0-alpha.25"
+$gradleProps = $gradleProps -replace "loom_version\s*=\s*[^\r\n]*", "loom_version=1.13.3"
 $gradleProps = $gradleProps -replace "fabric_version\s*=\s*[^\r\n]*", "fabric_version=0.141.3+1.21.11"
 $gradleProps = $gradleProps -replace "mod_version\s*=\s*[^\r\n]*", "mod_version = $Version"
 Set-Content gradle.properties -Value $gradleProps -NoNewline

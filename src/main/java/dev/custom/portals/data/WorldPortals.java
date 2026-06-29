@@ -4,6 +4,7 @@ import dev.custom.portals.CustomPortals;
 import org.ladysnake.cca.api.v3.component.sync.AutoSyncedComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public class WorldPortals extends PortalComponent implements AutoSyncedComponent {
@@ -12,6 +13,11 @@ public class WorldPortals extends PortalComponent implements AutoSyncedComponent
     public WorldPortals(World world) { this.world = world; }
 
     public World getWorld() { return world; }
+
+    @Override
+    public CustomPortal getPortalFromPos(BlockPos pos) {
+        return this.getPortalRegistry().getPortalFromPos(world.getRegistryKey().getValue().toString(), pos);
+    }
 
     @Override
     public void syncWithAll(MinecraftServer server) {

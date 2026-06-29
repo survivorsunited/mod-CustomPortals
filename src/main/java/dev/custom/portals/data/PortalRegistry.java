@@ -10,17 +10,21 @@ import net.minecraft.util.math.BlockPos;
 public class PortalRegistry {
 
     private List<CustomPortal> portals;
-    private Map<BlockPos, CustomPortal> portalPositions;
+    private Map<String, CustomPortal> portalPositions;
 
     public PortalRegistry() {
         portals = new ArrayList<CustomPortal>();
-        portalPositions = new HashMap<BlockPos, CustomPortal>();
+        portalPositions = new HashMap<String, CustomPortal>();
+    }
+
+    private static String getPortalPositionKey(String dimensionId, BlockPos pos) {
+        return dimensionId + "|" + pos.asLong();
     }
     
     public void register(CustomPortal portal) {
         tryWithAll(portal);
         for (BlockPos blockPos : portal.getPortalBlocks()) {
-            portalPositions.put(blockPos, portal);
+            portalPositions.put(getPortalPositionKey(portal.getDimensionId(), blockPos), portal);
         }
         portals.add(portal);
     }
@@ -31,7 +35,7 @@ public class PortalRegistry {
             tryWithAll(portal.getLinked());
         }
         for (BlockPos blockPos : portal.getPortalBlocks()) {
-            portalPositions.remove(blockPos);
+            portalPositions.remove(getPortalPositionKey(portal.getDimensionId(), blockPos));
         }
     }
 
@@ -52,7 +56,28 @@ public class PortalRegistry {
 
     //public void clear() { portals.clear(); }
 
+    public CustomPortal getPortalFromPos(String dimensionId, BlockPos pos) {
+        if (dimensionId == null) {
+            return null;
+        }
+        return portalPositions.get(getPortalPositionKey(dimensionId, pos));
+    }
+
+    /**
+     * Legacy fallback for callers that do not have world context. Returns a portal only
+     * when the position is unique across all dimensions; otherwise returns null to avoid
+     * routing entities through the wrong dimension's portal.
+     */
     public CustomPortal getPortalFromPos(BlockPos pos) {
-        return portalPositions.get(pos);
+        CustomPortal matchedPortal = null;
+        for (CustomPortal portal : portals) {
+            if (portal.getPortalBlocks().contains(pos)) {
+                if (matchedPortal != null) {
+                    return null;
+                }
+                matchedPortal = portal;
+            }
+        }
+        return matchedPortal;
     }
 }

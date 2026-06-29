@@ -121,6 +121,11 @@ jar {
 }
 
 loom {
+	// Fabric API 1.21.11 currently publishes mod-provided javadocs that Loom refuses
+	// to process in this setup. They are not needed for release builds, so keep the
+	// runtime jar build path strict and skip dependency-provided javadocs.
+	enableModProvidedJavadoc = false
+
 	runs {
 		testClient1 {
 			inherit client

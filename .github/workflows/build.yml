@@ -54,7 +54,17 @@ jobs:
           echo '✅ gradle.properties is pinned to Minecraft 1.21.11'
 
       - name: Build
-        run: ./gradlew clean build --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew clean build --no-daemon --stacktrace --console=plain 2>&1 | tee gradle-build.log
+
+      - name: Upload Gradle build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: gradle-build.log
+          retention-days: 7
 
       - name: Package release jar
         id: package

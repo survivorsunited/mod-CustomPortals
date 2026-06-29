@@ -1,747 +1,141 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
+name: build-and-release-1.21.11
 
-name: build
 on:
   pull_request:
+    branches:
+      - v1.21.11
   push:
-  create:
+    branches:
+      - v1.21.11
+    tags:
+      - 'v1.21.11-*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: custom-portals-1.21.11-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  MC_VERSION: '1.21.11'
+  JAVA_VERSION: '21'
 
 jobs:
-  build-matrix:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mc_version: ["1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"]
-      fail-fast: false
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'microsoft'
-          
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v4
-        
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
-        
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-        
-      - name: Extract version config
-        id: version_config
-        run: |
-          MC_VERSION="${{ matrix.mc_version }}"
-          CONFIG=$(jq -r ".[\"$MC_VERSION\"]" versions.json)
-          YARN_MAPPINGS=$(echo "$CONFIG" | jq -r '.yarn_mappings')
-          LOADER_VERSION=$(echo "$CONFIG" | jq -r '.loader_version')
-          FABRIC_VERSION=$(echo "$CONFIG" | jq -r '.fabric_version')
-          LOOM_VERSION=$(echo "$CONFIG" | jq -r '.loom_version')
-          GRADLE_VERSION=$(echo "$CONFIG" | jq -r '.gradle_version')
-          
-          echo "mc_version=$MC_VERSION" >> $GITHUB_OUTPUT
-          echo "yarn_mappings=$YARN_MAPPINGS" >> $GITHUB_OUTPUT
-          echo "loader_version=$LOADER_VERSION" >> $GITHUB_OUTPUT
-          echo "fabric_version=$FABRIC_VERSION" >> $GITHUB_OUTPUT
-          echo "loom_version=$LOOM_VERSION" >> $GITHUB_OUTPUT
-          echo "gradle_version=$GRADLE_VERSION" >> $GITHUB_OUTPUT
-          
-          echo "📦 Building for Minecraft $MC_VERSION"
-          echo "   Yarn: $YARN_MAPPINGS"
-          echo "   Loader: $LOADER_VERSION"
-          echo "   Fabric: $FABRIC_VERSION"
-          echo "   Loom: $LOOM_VERSION"
-          echo "   Gradle: $GRADLE_VERSION"
-        
-      - name: Update Gradle Wrapper
-        run: |
-          GRADLE_VERSION="${{ steps.version_config.outputs.gradle_version }}"
-          ./gradlew wrapper --gradle-version $GRADLE_VERSION
-        
-      - name: Update gradle.properties for version
-        run: |
-          MC_VERSION="${{ steps.version_config.outputs.mc_version }}"
-          YARN_MAPPINGS="${{ steps.version_config.outputs.yarn_mappings }}"
-          LOADER_VERSION="${{ steps.version_config.outputs.loader_version }}"
-          FABRIC_VERSION="${{ steps.version_config.outputs.fabric_version }}"
-          LOOM_VERSION="${{ steps.version_config.outputs.loom_version }}"
-          
-          sed -i "s/^minecraft_version=.*/minecraft_version=$MC_VERSION/" gradle.properties
-          sed -i "s/^yarn_mappings=.*/yarn_mappings=$YARN_MAPPINGS/" gradle.properties
-          sed -i "s/^loader_version=.*/loader_version=$LOADER_VERSION/" gradle.properties
-          sed -i "s/^fabric_loader_version=.*/fabric_loader_version=$LOADER_VERSION/" gradle.properties
-          sed -i "s/^fabric_version=.*/fabric_version=$FABRIC_VERSION/" gradle.properties
-          sed -i "s/^loom_version=.*/loom_version=$LOOM_VERSION/" gradle.properties
-          
-          echo "✅ Updated gradle.properties for $MC_VERSION"
-        
-      - name: Build project
-        id: build_step
-        continue-on-error: true
-        run: |
-          echo "🔨 Building mod for Minecraft ${{ steps.version_config.outputs.mc_version }}"
-          ./gradlew clean build --no-daemon
-          BUILD_EXIT_CODE=$?
-          
-          echo "📦 Generated files in build/libs:"
-          ls -la build/libs/ || echo "build/libs does not exist"
-          
-          if [ $BUILD_EXIT_CODE -ne 0 ]; then
-            echo "⚠️ Build step exited with code $BUILD_EXIT_CODE"
-            echo "Checking if any JARs were created despite error..."
-            find build/libs -name "*.jar" 2>/dev/null || echo "No JARs found"
-            exit 0  # Don't fail the job - let rename step handle it
-          fi
-          
-          echo "✅ Build completed successfully"
-        
-      - name: Rename JAR with Minecraft version
-        id: rename_jar
-        continue-on-error: true
-        run: |
-          MC_VERSION="${{ steps.version_config.outputs.mc_version }}"
-          # Handle spaces around equals sign in gradle.properties
-          MOD_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          MOD_NAME=$(grep "^[[:space:]]*jar_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*jar_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          
-          echo "Looking for JAR: ${MOD_NAME}-${MOD_VERSION}.jar"
-          echo "MOD_VERSION: ${MOD_VERSION}"
-          echo "MOD_NAME: ${MOD_NAME}"
-          echo "Files in build/libs:"
-          ls -la build/libs/ || echo "build/libs does not exist"
-          
-          # Find the main JAR (excluding sources and dev) - try exact version first
-          ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}.jar" ! -name "*sources*" ! -name "*dev*" 2>/dev/null | head -n 1)
-          
-          # If not found, try pattern match (in case version format differs slightly)
-          if [ -z "$ORIGINAL_JAR" ]; then
-            echo "Exact match not found, trying pattern match..."
-            ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-*.jar" ! -name "*sources*" ! -name "*dev*" 2>/dev/null | head -n 1)
-            if [ -n "$ORIGINAL_JAR" ]; then
-              echo "Found JAR with pattern match: $ORIGINAL_JAR"
-            fi
-          fi
-          
-          if [ -z "$ORIGINAL_JAR" ]; then
-            echo "⚠️ No JAR file found - this step will be skipped"
-            echo "Expected pattern: ${MOD_NAME}-${MOD_VERSION}.jar"
-            echo "MOD_VERSION from gradle.properties: ${MOD_VERSION}"
-            echo "MOD_NAME from gradle.properties: ${MOD_NAME}"
-            echo "All files in build/libs:"
-            ls -la build/libs/ 2>/dev/null || echo "build/libs does not exist"
-            # Don't exit 1 - let it continue
-            echo "jar_file=" >> $GITHUB_OUTPUT
-            echo "jar_name=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          echo "Found JAR: $ORIGINAL_JAR"
-          
-          # Create versioned filename: custom-portals-{version}-{mc_version}.jar
-          VERSIONED_JAR="build/libs/${MOD_NAME}-${MOD_VERSION}-${MC_VERSION}.jar"
-          cp "$ORIGINAL_JAR" "$VERSIONED_JAR"
-          
-          echo "jar_file=$VERSIONED_JAR" >> $GITHUB_OUTPUT
-          echo "jar_name=${MOD_NAME}-${MOD_VERSION}-${MC_VERSION}.jar" >> $GITHUB_OUTPUT
-          echo "✅ Created versioned JAR: $VERSIONED_JAR"
-        
-      - name: Upload versioned JAR artifact
-        uses: actions/upload-artifact@v4
-        if: steps.rename_jar.outputs.jar_file != ''
-        with:
-          name: jar-${{ steps.version_config.outputs.mc_version }}
-          path: ${{ steps.rename_jar.outputs.jar_file }}
-          retention-days: 7
-        continue-on-error: true
-
-      - name: Run tests
-        shell: pwsh
-        continue-on-error: true
-        if: steps.rename_jar.outputs.jar_file != ''
-        run: |
-          MC_VERSION="${{ steps.version_config.outputs.mc_version }}"
-          echo "🧪 Running tests for Minecraft $MC_VERSION"
-          
-          # Make test scripts executable
-          chmod +x tests/*.ps1 || true
-          
-          # Run test 001 (server startup)
-          echo "Running test 001-validate-server-startup.ps1..."
-          pwsh -File tests/001-validate-server-startup.ps1 -MinecraftVersion "$MC_VERSION" -TimeoutSeconds 180
-          
-          if ($LASTEXITCODE -ne 0) {
-            echo "⚠️ Test 001-validate-server-startup.ps1 failed or timed out (continuing anyway)"
-            echo "This is expected in CI due to server download/startup time constraints"
-          } else {
-            echo "✅ All tests passed!"
-          }
-
-      - name: Upload test logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        continue-on-error: true
-        with:
-          name: test-logs-${{ steps.version_config.outputs.mc_version }}
-          path: tests/test-output/001-validate-server-startup/
-          retention-days: 7
-
   build:
-    runs-on: ubuntu-latest
-    needs: build-matrix
-    if: always()  # Run even if some matrix jobs fail
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'microsoft'
-          
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v4
-        
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
-        
-      - name: Build project (default version)
-        run: ./gradlew build
-        
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Artifacts
-          path: build/libs/
-
-  docs:
-    runs-on: ubuntu-latest
-    if: false  # Disable docs job until docs directory exists
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    concurrency:
-      group: "pages"
-      cancel-in-progress: false
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: docs/package-lock.json
-          
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-          
-      - name: Install dependencies
-        run: |
-          cd docs
-          npm ci
-          
-      - name: Build documentation
-        run: |
-          cd docs
-          npm run build
-          
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./docs/build
-
-  deploy-docs:
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: docs    
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-  # update-modrinth-description:
-  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-  #   needs: deploy-docs
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #       
-  #     - name: Update Modrinth project description
-  #       shell: pwsh
-  #       env:
-  #         MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-  #         PROJECT_ID: ${{ secrets.PROJECT_ID }}
-  #       run: ./scripts/update-modrinth.ps1
-
-  auto-version:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [build-matrix]
+    name: Build 1.21.11 jar
     runs-on: ubuntu-latest
     outputs:
-      version_changed: ${{ steps.version_changed.outputs.changed }}
-      new_version: ${{ steps.new_version.outputs.new_version }}
-    permissions:
-      contents: write
+      mod_version: ${{ steps.package.outputs.mod_version }}
+      jar_name: ${{ steps.package.outputs.jar_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'microsoft'
-          
-      - name: Get current version
-        id: current_version
-        run: |
-          # Handle spaces around equals sign in gradle.properties
-          CURRENT_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $CURRENT_VERSION"
-          
-      - name: Increment patch version
-        id: new_version
-        run: |
-          CURRENT_VERSION="${{ steps.current_version.outputs.version }}"
-          # Split version into parts (assume semantic versioning: x.y.z)
-          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
-          MAJOR=${VERSION_PARTS[0]}
-          MINOR=${VERSION_PARTS[1]}
-          PATCH=${VERSION_PARTS[2]}
-          
-          # Increment patch version
-          NEW_PATCH=$((PATCH + 1))
-          NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
-          
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "New version: $NEW_VERSION"
-          
-      - name: Update gradle.properties
-        run: |
-          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
-          # Handle spaces around equals sign - preserve existing format
-          sed -i "s/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*.*/mod_version = $NEW_VERSION/" gradle.properties
-          echo "Updated gradle.properties with version $NEW_VERSION"
-          
-      - name: Check if version changed
-        id: version_changed
-        run: |
-          if git diff --quiet gradle.properties; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No version change needed"
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Version will be updated"
-          fi
-          
-      - name: Commit and tag new version
-        if: steps.version_changed.outputs.changed == 'true'
-        run: |
-          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
-          
-          # Configure git
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          
-          # Commit version bump
-          git add gradle.properties
-          git commit -m "Bump version to $NEW_VERSION"
-          
-          # Create and push tag
-          git tag -a "$NEW_VERSION" -m "Release $NEW_VERSION"
-          git push origin main
-          git push origin "$NEW_VERSION"
-          
-          echo "✅ Version bumped to $NEW_VERSION and tagged"
 
-  release-manual:
-    # Run when a tag is created manually (via release.ps1)
-    if: github.event_name == 'create' && github.event.ref_type == 'tag'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Determine release version from tag
-        id: release_version
-        run: |
-          VERSION="${{ github.event.ref }}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Manual release triggered by tag: $VERSION"
-      
-      - name: Checkout tagged code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ steps.release_version.outputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'microsoft'
-          
-      - name: Validate Gradle Wrapper
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: microsoft
+
+      - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
-        
+
       - name: Make Gradle executable
         run: chmod +x ./gradlew
-        
-      - name: Extract properties from gradle.properties
-        id: properties
+
+      - name: Confirm branch version pins
         run: |
-          # Handle spaces around equals sign in gradle.properties
-          MOD_NAME=$(grep "^[[:space:]]*jar_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*jar_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          MOD_TITLE=$(grep "^[[:space:]]*mod_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          MOD_DESCRIPTION=$(grep "^[[:space:]]*mod_description[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_description[[:space:]]*=[[:space:]]*//')
-          MOD_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          echo "modName=$MOD_NAME" >> $GITHUB_OUTPUT
-          echo "modTitle=$MOD_TITLE" >> $GITHUB_OUTPUT
-          echo "modDescription=$MOD_DESCRIPTION" >> $GITHUB_OUTPUT
-          echo "modVersion=$MOD_VERSION" >> $GITHUB_OUTPUT
-          
-      - name: Build all Minecraft versions
+          set -euo pipefail
+          grep -E '^[[:space:]]*minecraft_version[[:space:]]*=[[:space:]]*1\.21\.11[[:space:]]*$' gradle.properties
+          grep -E '^[[:space:]]*java_version[[:space:]]*=[[:space:]]*21[[:space:]]*$' gradle.properties
+          grep -E '^[[:space:]]*fabric_version[[:space:]]*=.*\+1\.21\.11[[:space:]]*$' gradle.properties
+          echo '✅ gradle.properties is pinned to Minecraft 1.21.11'
+
+      - name: Build
+        run: ./gradlew clean build --no-daemon --stacktrace
+
+      - name: Package release jar
+        id: package
         run: |
-          MOD_VERSION="${{ steps.properties.outputs.modVersion }}"
-          MOD_NAME="${{ steps.properties.outputs.modName }}"
-          
-          for MC_VERSION in "1.21.5" "1.21.6" "1.21.7" "1.21.8" "1.21.9" "1.21.10" "1.21.11"; do
-            echo "📦 Building for Minecraft $MC_VERSION"
-            
-            CONFIG=$(jq -r ".[\"$MC_VERSION\"]" versions.json)
-            YARN_MAPPINGS=$(echo "$CONFIG" | jq -r '.yarn_mappings')
-            LOADER_VERSION=$(echo "$CONFIG" | jq -r '.loader_version')
-            FABRIC_VERSION=$(echo "$CONFIG" | jq -r '.fabric_version')
-            LOOM_VERSION=$(echo "$CONFIG" | jq -r '.loom_version')
-            GRADLE_VERSION=$(echo "$CONFIG" | jq -r '.gradle_version')
-            
-            # Update Gradle wrapper first
-            ./gradlew wrapper --gradle-version $GRADLE_VERSION
-            
-            # Update gradle.properties
-            sed -i "s/^minecraft_version=.*/minecraft_version=$MC_VERSION/" gradle.properties
-            sed -i "s/^yarn_mappings=.*/yarn_mappings=$YARN_MAPPINGS/" gradle.properties
-            sed -i "s/^loader_version=.*/loader_version=$LOADER_VERSION/" gradle.properties
-            sed -i "s/^fabric_loader_version=.*/fabric_loader_version=$LOADER_VERSION/" gradle.properties
-            sed -i "s/^fabric_version=.*/fabric_version=$FABRIC_VERSION/" gradle.properties
-            sed -i "s/^loom_version=.*/loom_version=$LOOM_VERSION/" gradle.properties
-            
-            # Preserve existing versioned JARs before cleaning
-            mkdir -p build/libs-all
-            find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" -exec cp {} build/libs-all/ \; 2>/dev/null || true
-            
-            # Clean gradle cache and build directory
-            rm -rf .gradle build/libs build/classes build/resources
-            mkdir -p build/libs
-            
-            # Build with refresh dependencies
-            ./gradlew build --no-daemon --refresh-dependencies
-            
-            # Find and copy the built JAR - handle spaces in gradle.properties
-            ACTUAL_MOD_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-            ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-${ACTUAL_MOD_VERSION}.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
-            
-            # If not found, try pattern match
-            if [ -z "$ORIGINAL_JAR" ]; then
-              ORIGINAL_JAR=$(find build/libs -name "${MOD_NAME}-*.jar" ! -name "*sources*" ! -name "*dev*" | head -n 1)
-              if [ -n "$ORIGINAL_JAR" ]; then
-                ACTUAL_MOD_VERSION=$(basename "$ORIGINAL_JAR" | sed "s/${MOD_NAME}-//" | sed "s/\.jar$//")
-              fi
-            fi
-            
-            if [ -n "$ORIGINAL_JAR" ]; then
-              VERSIONED_JAR="build/libs-all/${MOD_NAME}-${ACTUAL_MOD_VERSION}-${MC_VERSION}.jar"
-              cp "$ORIGINAL_JAR" "$VERSIONED_JAR"
-              echo "✅ Built: $VERSIONED_JAR"
-            else
-              echo "❌ Failed to find JAR for $MC_VERSION"
-              echo "Contents of build/libs:"
-              ls -la build/libs/ || echo "build/libs does not exist"
-              echo "Looking for: ${MOD_NAME}-${ACTUAL_MOD_VERSION}.jar"
-              exit 1
-            fi
-          done
-          
-          # Move all collected JARs to build/libs for the collection step
-          mkdir -p build/libs
-          if [ -d build/libs-all ] && [ "$(ls -A build/libs-all/*.jar 2>/dev/null)" ]; then
-            mv build/libs-all/*.jar build/libs/ 2>/dev/null || true
-            rmdir build/libs-all 2>/dev/null || true
-            echo "📦 All JARs collected in build/libs:"
-            ls -la build/libs/
-            
-            # Validate we have JARs for all expected versions
-            JAR_COUNT=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | wc -l)
-            EXPECTED_VERSIONS=7
-            if [ "$JAR_COUNT" -lt "$EXPECTED_VERSIONS" ]; then
-              echo "⚠️ Warning: Expected $EXPECTED_VERSIONS JARs but found $JAR_COUNT"
-              echo "Found JARs:"
-              find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | sort
-            else
-              echo "✅ Found all $JAR_COUNT expected JARs"
-            fi
-          else
-            echo "❌ No JARs found in build/libs-all"
+          set -euo pipefail
+          MOD_NAME=$(grep '^[[:space:]]*jar_name[[:space:]]*=' gradle.properties | sed 's/^[[:space:]]*jar_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+          MOD_VERSION=$(grep '^[[:space:]]*mod_version[[:space:]]*=' gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
+
+          echo "MOD_NAME=$MOD_NAME"
+          echo "MOD_VERSION=$MOD_VERSION"
+          echo 'Files in build/libs:'
+          ls -la build/libs/
+
+          ORIGINAL_JAR=$(find build/libs -maxdepth 1 -type f -name "${MOD_NAME}-${MOD_VERSION}.jar" ! -name '*sources*' ! -name '*dev*' | head -n 1)
+          if [ -z "$ORIGINAL_JAR" ]; then
+            echo 'Exact jar not found; trying fallback pattern.'
+            ORIGINAL_JAR=$(find build/libs -maxdepth 1 -type f -name "${MOD_NAME}-*.jar" ! -name '*sources*' ! -name '*dev*' | head -n 1)
+          fi
+
+          if [ -z "$ORIGINAL_JAR" ]; then
+            echo "❌ Could not find built jar for ${MOD_NAME}-${MOD_VERSION}"
             exit 1
           fi
-          
-      - name: Collect all versioned JARs
-        id: collect_jars
+
+          mkdir -p release-artifacts
+          VERSIONED_JAR="release-artifacts/${MOD_NAME}-${MOD_VERSION}-${MC_VERSION}.jar"
+          cp "$ORIGINAL_JAR" "$VERSIONED_JAR"
+
+          echo "jar_file=$VERSIONED_JAR" >> "$GITHUB_OUTPUT"
+          echo "jar_name=$(basename "$VERSIONED_JAR")" >> "$GITHUB_OUTPUT"
+          echo "mod_version=$MOD_VERSION" >> "$GITHUB_OUTPUT"
+          echo "✅ Packaged $VERSIONED_JAR"
+
+      - name: Validate jar contents
         run: |
-          MOD_NAME="${{ steps.properties.outputs.modName }}"
-          MOD_VERSION="${{ steps.properties.outputs.modVersion }}"
-          
-          echo "Looking for JARs with pattern: ${MOD_NAME}-${MOD_VERSION}-*.jar"
-          echo "Files in build/libs:"
-          ls -la build/libs/ || echo "build/libs does not exist"
-          
-          # Find all versioned JARs - try exact version first
-          JARS=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | sort)
-          
-          # If not found, try pattern match (in case version format differs)
-          if [ -z "$JARS" ]; then
-            echo "Exact match not found, trying pattern match..."
-            JARS=$(find build/libs -name "${MOD_NAME}-*-*.jar" ! -name "*sources*" ! -name "*dev*" | sort)
-          fi
-          
-          if [ -z "$JARS" ]; then
-            echo "❌ No versioned JARs found"
-            echo "Expected pattern: ${MOD_NAME}-${MOD_VERSION}-*.jar"
-            ls -la build/libs/
-            exit 1
-          fi
-          
-          echo "✅ Found JARs:"
-          echo "$JARS"
-          
-          # Create newline-separated list for release (action-gh-release expects multiline)
-          echo "jars<<EOF" >> $GITHUB_OUTPUT
-          echo "$JARS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-          echo "📦 Found JARs:"
-          echo "$JARS"
-          
-      - name: Generate changelog
-        id: changelog
-        run: |
-          NEW_VERSION="${{ steps.release_version.outputs.version }}"
-          if git describe --tags --abbrev=0 HEAD^ 2>/dev/null; then
-            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^)
-            CHANGELOG="## Changes in $NEW_VERSION"
-            CHANGELOG="$CHANGELOG"$'\n'
-            CHANGELOG="$CHANGELOG$(git log --pretty=format:'- %s' $PREV_TAG..HEAD)"
-          else
-            CHANGELOG="## Initial Release $NEW_VERSION"
-            CHANGELOG="$CHANGELOG"$'\n'
-            CHANGELOG="$CHANGELOG- Initial release of ${{ steps.properties.outputs.modTitle }}"
-            CHANGELOG="$CHANGELOG"$'\n'
-            CHANGELOG="$CHANGELOG- ${{ steps.properties.outputs.modDescription }}"
-          fi
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-      - name: Create Release with all JARs
-        uses: softprops/action-gh-release@v1
+          set -euo pipefail
+          JAR="release-artifacts/${{ steps.package.outputs.jar_name }}"
+          MOD_VERSION="${{ steps.package.outputs.mod_version }}"
+
+          jar tf "$JAR" | grep 'dev/custom/portals/blocks/PortalBlock21_9.class'
+          jar tf "$JAR" | grep 'dev/custom/portals/mixin/ServerPlayerEntityMixin21_9.class'
+          unzip -p "$JAR" fabric.mod.json > built-fabric.mod.json
+          grep '"minecraft": ">=1.21.11"' built-fabric.mod.json
+          grep "\"version\": \"$MOD_VERSION\"" built-fabric.mod.json
+          echo '✅ Jar has 1.21.11 portal classes and metadata'
+
+      - name: Upload jar artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: ${{ steps.release_version.outputs.version }}
-          name: Release ${{ steps.release_version.outputs.version }}
-          body: ${{ steps.changelog.outputs.changelog }}
-          files: ${{ steps.collect_jars.outputs.jars }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      # - name: Publish to Modrinth
-      #   uses: cloudnode-pro/modrinth-publish@v2
-      #   with:
-      #     token: ${{ secrets.MODRINTH_TOKEN }}
-      #     project: ${{ secrets.PROJECT_ID }}
-      #     loaders: fabric
-      #     files: ${{ steps.collect_jars.outputs.jars }}
-      #     version: ${{ steps.release_version.outputs.version }}
-      #     changelog: ${{ steps.changelog.outputs.changelog }}
-#     game-versions: |-
-#       1.21.5
-#       1.21.6
-#       1.21.7
-#       1.21.8
-#       1.21.9
-#       1.21.10
-#       1.21.11
-#     featured: true
-#     channel: release
+          name: custom-portals-${{ steps.package.outputs.mod_version }}-1.21.11
+          path: release-artifacts/*.jar
+          retention-days: 14
 
   release:
-    needs: [auto-version, build-matrix]
-    if: needs.auto-version.outputs.version_changed == 'true'
+    name: Publish GitHub release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v1.21.11-')
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Determine release version
-        id: release_version
-        run: |
-          VERSION="${{ needs.auto-version.outputs.new_version }}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Auto-version release: $VERSION"
-      
-      - name: Checkout code with version bump
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Download all versioned JARs
+      - name: Download built jar
         uses: actions/download-artifact@v4
         with:
-          pattern: jar-*
-          path: build/libs/
-          merge-multiple: true
-          
-      - name: Setup Java
-        uses: actions/setup-java@v4
+          name: custom-portals-${{ needs.build.outputs.mod_version }}-1.21.11
+          path: release-artifacts
+
+      - name: Show release files
+        run: ls -lah release-artifacts
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
         with:
-          java-version: '21'
-          distribution: 'microsoft'
-          
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v4
-        
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
-        
-      - name: Extract properties from gradle.properties
-        id: properties
-        run: |
-          # Handle spaces around equals sign in gradle.properties
-          MOD_NAME=$(grep "^[[:space:]]*jar_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*jar_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          MOD_TITLE=$(grep "^[[:space:]]*mod_name[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_name[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          MOD_DESCRIPTION=$(grep "^[[:space:]]*mod_description[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_description[[:space:]]*=[[:space:]]*//')
-          MOD_VERSION=$(grep "^[[:space:]]*mod_version[[:space:]]*=" gradle.properties | sed 's/^[[:space:]]*mod_version[[:space:]]*=[[:space:]]*//' | tr -d '[:space:]')
-          echo "modName=$MOD_NAME" >> $GITHUB_OUTPUT
-          echo "modTitle=$MOD_TITLE" >> $GITHUB_OUTPUT
-          echo "modDescription=$MOD_DESCRIPTION" >> $GITHUB_OUTPUT
-          echo "modVersion=$MOD_VERSION" >> $GITHUB_OUTPUT
-          
-      - name: List collected JARs
-        run: |
-          echo "📦 Collected JARs:"
-          ls -lh build/libs/*.jar || echo "No JARs found"
-          
-      - name: Generate changelog
-        id: changelog
-        run: |
-          NEW_VERSION="${{ steps.release_version.outputs.version }}"
-          if git describe --tags --abbrev=0 HEAD^ 2>/dev/null; then
-            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^)
-            CHANGELOG="## Changes in $NEW_VERSION"
-            CHANGELOG="$CHANGELOG"$'\n'
-            CHANGELOG="$CHANGELOG$(git log --pretty=format:'- %s' $PREV_TAG..HEAD)"
-          else
-            CHANGELOG="## Initial Release $NEW_VERSION"
-            CHANGELOG="$CHANGELOG"$'\n'
-            CHANGELOG="$CHANGELOG- Initial release of ${{ steps.properties.outputs.modTitle }}"
-            CHANGELOG="$CHANGELOG"$'\n'
-            CHANGELOG="$CHANGELOG- ${{ steps.properties.outputs.modDescription }}"
-          fi
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-      - name: Collect all versioned JARs
-        id: collect_jars
-        run: |
-          MOD_NAME="${{ steps.properties.outputs.modName }}"
-          MOD_VERSION="${{ steps.release_version.outputs.version }}"
-          
-          echo "Looking for JARs with pattern: ${MOD_NAME}-${MOD_VERSION}-*.jar"
-          echo "Files in build/libs:"
-          ls -la build/libs/ || echo "build/libs does not exist"
-          
-          # Find all versioned JARs - try exact version first
-          JARS=$(find build/libs -name "${MOD_NAME}-${MOD_VERSION}-*.jar" ! -name "*sources*" ! -name "*dev*" | sort)
-          
-          # If not found, try pattern match (in case version format differs)
-          if [ -z "$JARS" ]; then
-            echo "Exact match not found, trying pattern match..."
-            JARS=$(find build/libs -name "${MOD_NAME}-*-*.jar" ! -name "*sources*" ! -name "*dev*" | sort)
-          fi
-          
-          if [ -z "$JARS" ]; then
-            echo "❌ No versioned JARs found"
-            echo "Expected pattern: ${MOD_NAME}-${MOD_VERSION}-*.jar"
-            ls -la build/libs/
-            exit 1
-          fi
-          
-          echo "✅ Found JARs:"
-          echo "$JARS"
-          
-          # Create newline-separated list for release (action-gh-release expects multiline)
-          echo "jars<<EOF" >> $GITHUB_OUTPUT
-          echo "$JARS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-          echo "📦 Found JARs:"
-          echo "$JARS"
-          
-      - name: Create Release with all JARs
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.release_version.outputs.version }}
-          name: Release ${{ steps.release_version.outputs.version }}
-          body: ${{ steps.changelog.outputs.changelog }}
-          files: ${{ steps.collect_jars.outputs.jars }}
+          tag_name: ${{ github.ref_name }}
+          name: Custom Portals ${{ needs.build.outputs.mod_version }} for Minecraft 1.21.11
+          body: |
+            ## Custom Portals ${{ needs.build.outputs.mod_version }} for Minecraft 1.21.11
+
+            Built from the dedicated `v1.21.11` branch.
+
+            This release targets Minecraft 1.21.11 only.
+          files: release-artifacts/*.jar
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      # - name: Publish to Modrinth
-      #   uses: cloudnode-pro/modrinth-publish@v2
-      #   with:
-      #     token: ${{ secrets.MODRINTH_TOKEN }}
-      #     project: ${{ secrets.PROJECT_ID }}
-      #     loaders: fabric
-      #     files: ${{ steps.collect_jars.outputs.jars }}
-      #     version: ${{ steps.release_version.outputs.version }}
-      #     changelog: ${{ steps.changelog.outputs.changelog }}
-      #     game-versions: |-
-      #       1.21.5
-      #       1.21.6
-      #       1.21.7
-      #       1.21.8
-      #       1.21.9
-      #       1.21.10
-      #       1.21.11
-      #     featured: true
-      #     channel: release

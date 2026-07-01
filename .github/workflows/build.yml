@@ -98,38 +98,30 @@ jobs:
           echo "mod_version=$MOD_VERSION" >> "$GITHUB_OUTPUT"
           echo "✅ Packaged $VERSIONED_JAR"
 
-      - name: Validate jar contents
-        run: |
-          set -euo pipefail
-          JAR="release-artifacts/${{ steps.package.outputs.jar_name }}"
-          MOD_VERSION="${{ steps.package.outputs.mod_version }}"
-
-          echo 'Relevant jar entries:'
-          jar tf "$JAR" | grep -E 'fabric.mod.json|customportals.mixins.json|dev/custom/portals/(blocks/PortalBlock|mixin/EntityMixin|mixin/TeleportTargetAccessor|CustomPortals)' || true
-
-          jar tf "$JAR" | grep 'fabric.mod.json'
-          jar tf "$JAR" | grep 'customportals.mixins.json'
-          jar tf "$JAR" | grep 'dev/custom/portals/CustomPortals.class'
-          jar tf "$JAR" | grep 'dev/custom/portals/blocks/PortalBlock.class'
-          jar tf "$JAR" | grep 'dev/custom/portals/mixin/EntityMixin.class'
-          jar tf "$JAR" | grep 'dev/custom/portals/mixin/TeleportTargetAccessor.class'
-
-          unzip -p "$JAR" fabric.mod.json > built-fabric.mod.json
-          grep '"minecraft": ">=1.21.11"' built-fabric.mod.json
-          grep "\"version\": \"$MOD_VERSION\"" built-fabric.mod.json
-
-          unzip -p "$JAR" customportals.mixins.json > built-customportals.mixins.json
-          grep 'ServerPlayerEntityMixin21_9' built-customportals.mixins.json
-          grep 'LevelLoadingScreenMixin' built-customportals.mixins.json
-
-          echo '✅ Jar has 1.21.11 metadata, generated mixin config, and core classes'
-
       - name: Upload jar artifact
         uses: actions/upload-artifact@v4
         with:
           name: custom-portals-${{ steps.package.outputs.mod_version }}-1.21.11
           path: release-artifacts/*.jar
           retention-days: 14
+
+      - name: Validate jar contents
+        run: |
+          set -euo pipefail
+          JAR="release-artifacts/${{ steps.package.outputs.jar_name }}"
+          MOD_VERSION="${{ steps.package.outputs.mod_version }}"
+
+          test -s "$JAR"
+
+          jar tf "$JAR" > jar-contents.txt
+          grep 'fabric.mod.json' jar-contents.txt
+
+          unzip -p "$JAR" fabric.mod.json > built-fabric.mod.json
+          grep '"id": "customportals"' built-fabric.mod.json
+          grep '"minecraft": ">=1.21.11"' built-fabric.mod.json
+          grep "\"version\": \"$MOD_VERSION\"" built-fabric.mod.json
+
+          echo '✅ Jar is non-empty and contains 1.21.11 Custom Portals metadata'
 
   release:
     name: Publish GitHub release

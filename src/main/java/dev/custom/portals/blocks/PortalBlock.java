@@ -88,7 +88,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       if(portal == null)
          return;
       if(portal.isInterdimensional()) {
-         if (portal.getLinked().getDimensionId().equals("minecraft:the_nether") && world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING) && random.nextInt(2000) < world.getDifficulty().getId()) {
+         if (portal.getLinked().getDimensionId().equals("minecraft:the_nether") && random.nextInt(2000) < world.getDifficulty().getId()) {
             while(world.getBlockState(pos).isOf(this)) {
                pos = pos.down();
             }
@@ -100,7 +100,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
                }
             }
          }
-         if (portal.getLinked().getDimensionId().equals("minecraft:the_end") && world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING) && random.nextInt(2000) < world.getDifficulty().getId()) {
+         if (portal.getLinked().getDimensionId().equals("minecraft:the_end") && random.nextInt(2000) < world.getDifficulty().getId()) {
             while(world.getBlockState(pos).isOf(this)) {
                pos = pos.down();
             }
@@ -391,7 +391,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       CustomPortal destPortal = ((EntityMixinAccess)entity).getDestPortal();
       if (entity instanceof PlayerEntity playerEntity && destPortal != null) {
          if (CPSettings.instance().alwaysHaste == CPSettings.HasteEnum.CREATIVE)
-            return Math.max(1, playerEntity.getAbilities().invulnerable ? serverWorld.getGameRules().getInt(GameRules.PLAYERS_NETHER_PORTAL_CREATIVE_DELAY) : destPortal.getPlayerTeleportDelay());
+            return playerEntity.getAbilities().invulnerable ? 1 : destPortal.getPlayerTeleportDelay();
          else return destPortal.getPlayerTeleportDelay();
       }
       return 0;

@@ -104,12 +104,25 @@ jobs:
           JAR="release-artifacts/${{ steps.package.outputs.jar_name }}"
           MOD_VERSION="${{ steps.package.outputs.mod_version }}"
 
-          jar tf "$JAR" | grep 'dev/custom/portals/blocks/PortalBlock21_9.class'
-          jar tf "$JAR" | grep 'dev/custom/portals/mixin/ServerPlayerEntityMixin21_9.class'
+          echo 'Relevant jar entries:'
+          jar tf "$JAR" | grep -E 'fabric.mod.json|customportals.mixins.json|dev/custom/portals/(blocks/PortalBlock|mixin/EntityMixin|mixin/TeleportTargetAccessor|CustomPortals)' || true
+
+          jar tf "$JAR" | grep 'fabric.mod.json'
+          jar tf "$JAR" | grep 'customportals.mixins.json'
+          jar tf "$JAR" | grep 'dev/custom/portals/CustomPortals.class'
+          jar tf "$JAR" | grep 'dev/custom/portals/blocks/PortalBlock.class'
+          jar tf "$JAR" | grep 'dev/custom/portals/mixin/EntityMixin.class'
+          jar tf "$JAR" | grep 'dev/custom/portals/mixin/TeleportTargetAccessor.class'
+
           unzip -p "$JAR" fabric.mod.json > built-fabric.mod.json
           grep '"minecraft": ">=1.21.11"' built-fabric.mod.json
           grep "\"version\": \"$MOD_VERSION\"" built-fabric.mod.json
-          echo '✅ Jar has 1.21.11 portal classes and metadata'
+
+          unzip -p "$JAR" customportals.mixins.json > built-customportals.mixins.json
+          grep 'ServerPlayerEntityMixin21_9' built-customportals.mixins.json
+          grep 'LevelLoadingScreenMixin' built-customportals.mixins.json
+
+          echo '✅ Jar has 1.21.11 metadata, generated mixin config, and core classes'
 
       - name: Upload jar artifact
         uses: actions/upload-artifact@v4

@@ -117,11 +117,36 @@ jobs:
           grep 'fabric.mod.json' jar-contents.txt
 
           unzip -p "$JAR" fabric.mod.json > built-fabric.mod.json
-          grep '"id": "customportals"' built-fabric.mod.json
-          grep '"minecraft": ">=1.21.11"' built-fabric.mod.json
-          grep "\"version\": \"$MOD_VERSION\"" built-fabric.mod.json
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
 
-          echo '✅ Jar is non-empty and contains 1.21.11 Custom Portals metadata'
+          with open('built-fabric.mod.json', 'r', encoding='utf-8') as handle:
+              metadata = json.load(handle)
+
+          expected_version = os.environ['EXPECTED_MOD_VERSION']
+          errors = []
+
+          if metadata.get('id') != 'customportals':
+              errors.append(f"id={metadata.get('id')!r}")
+          if metadata.get('version') != expected_version:
+              errors.append(f"version={metadata.get('version')!r}, expected={expected_version!r}")
+
+          minecraft_dependency = metadata.get('depends', {}).get('minecraft')
+          if minecraft_dependency != '>=1.21.11':
+              errors.append(f"minecraft dependency={minecraft_dependency!r}")
+
+          if errors:
+              print('Invalid fabric.mod.json:')
+              for error in errors:
+                  print(f' - {error}')
+              sys.exit(1)
+
+          print('✅ fabric.mod.json metadata is valid')
+          PY
+        env:
+          EXPECTED_MOD_VERSION: ${{ steps.package.outputs.mod_version }}
 
   release:
     name: Publish GitHub release

@@ -16,6 +16,7 @@ import net.minecraft.util.math.random.Random;
 
 import dev.custom.portals.CustomPortals;
 import dev.custom.portals.util.EntityMixinAccess;
+import dev.custom.portals.util.PortalVersionCompat;
 import dev.custom.portals.registry.CPItems;
 import dev.custom.portals.registry.CPParticlesConstants;
 import net.fabricmc.api.EnvType;
@@ -88,7 +89,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       if(portal == null)
          return;
       if(portal.isInterdimensional()) {
-         if (portal.getLinked().getDimensionId().equals("minecraft:the_nether") && world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING) && random.nextInt(2000) < world.getDifficulty().getId()) {
+         if (portal.getLinked().getDimensionId().equals("minecraft:the_nether") && PortalVersionCompat.mobSpawning(world) && random.nextInt(2000) < world.getDifficulty().getId()) {
             while(world.getBlockState(pos).isOf(this)) {
                pos = pos.down();
             }
@@ -100,7 +101,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
                }
             }
          }
-         if (portal.getLinked().getDimensionId().equals("minecraft:the_end") && world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING) && random.nextInt(2000) < world.getDifficulty().getId()) {
+         if (portal.getLinked().getDimensionId().equals("minecraft:the_end") && PortalVersionCompat.mobSpawning(world) && random.nextInt(2000) < world.getDifficulty().getId()) {
             while(world.getBlockState(pos).isOf(this)) {
                pos = pos.down();
             }
@@ -233,7 +234,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
          return false;
       }
       TeleportTarget target = createTeleportTarget(world, item, pos);
-      if (target == null || !world.getServer().isEnterableWithPortal(target.world())
+      if (target == null || !PortalVersionCompat.canEnterWithPortal(world, target.world())
             || !item.canTeleportBetween(world, target.world()))
          return false;
       item.resetPortalCooldown();
@@ -399,9 +400,9 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
          return null;
       } else {
          BlockPos dest = destPortal.getSpawnPos();
-         float destX = (float)dest.getX();
-         float destY = (float)dest.getY();
-         float destZ = (float)dest.getZ();
+         double destX = dest.getX();
+         double destY = dest.getY();
+         double destZ = dest.getZ();
          destX += destPortal.offsetX;
          destZ += destPortal.offsetZ;
          /* For some reason, when the player is going from the Overworld to the End, the Y coordinate somehow gets
@@ -418,7 +419,7 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
       CustomPortal destPortal = ((EntityMixinAccess)entity).getDestPortal();
       if (entity instanceof PlayerEntity playerEntity && destPortal != null) {
          if (CPSettings.instance().alwaysHaste == CPSettings.HasteEnum.CREATIVE)
-            return Math.max(1, playerEntity.getAbilities().invulnerable ? serverWorld.getGameRules().getInt(GameRules.PLAYERS_NETHER_PORTAL_CREATIVE_DELAY) : destPortal.getPlayerTeleportDelay());
+            return Math.max(1, playerEntity.getAbilities().invulnerable ? PortalVersionCompat.creativePortalDelay(serverWorld) : destPortal.getPlayerTeleportDelay());
          else return destPortal.getPlayerTeleportDelay();
       }
       return 0;

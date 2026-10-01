@@ -19,6 +19,11 @@ does not bounce back. Move it clear of the portal before routing it again.
 
 Player and mob portal delays are unchanged.
 
+For automated droppers, check the portal's redstone setting as well. The default
+"Turns Portals Off" setting disables a portal when the dropper's wiring also
+powers it. Select "Has No Effect" or keep that wiring from powering the portal
+if it should stay active during dispensing.
+
 ## In-game verification
 
 1. Create two linked, active portals in the same dimension.

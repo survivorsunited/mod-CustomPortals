@@ -93,6 +93,9 @@ $gradleProps = $gradleProps -replace "loader_version\s*=\s*[^\r\n]*", "loader_ve
 $gradleProps = $gradleProps -replace "fabric_loader_version\s*=\s*[^\r\n]*", "fabric_loader_version=$($versionConfig.loader_version)"
 $gradleProps = $gradleProps -replace "loom_version\s*=\s*[^\r\n]*", "loom_version=$($versionConfig.loom_version)"
 $gradleProps = $gradleProps -replace "fabric_version\s*=\s*[^\r\n]*", "fabric_version=$($versionConfig.fabric_version)"
+$gradleProps = $gradleProps -replace "yacl_version\s*=\s*[^\r\n]*", "yacl_version=$($versionConfig.yacl_version)"
+$gradleProps = $gradleProps -replace "cardinalcomponents_version\s*=\s*[^\r\n]*", "cardinalcomponents_version=$($versionConfig.cardinalcomponents_version)"
+$gradleProps = $gradleProps -replace "modmenu_version\s*=\s*[^\r\n]*", "modmenu_version=$($versionConfig.modmenu_version)"
 
 # Write back
 $gradleProps | Set-Content gradle.properties -NoNewline
@@ -407,4 +410,4 @@ enable-command-block=true
         Set-Location ..
         Write-Host "`n🛑 Server stopped" -ForegroundColor Yellow
     }
-} 
+}

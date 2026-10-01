@@ -44,7 +44,7 @@ public abstract class ServerPlayerEntityMixin21_9 extends PlayerEntity {
     private int syncedFoodLevel;
 
     @Shadow
-    public abstract ServerWorld getWorld();
+    public abstract ServerWorld getEntityWorld();
     @Shadow
     protected abstract void worldChanged(ServerWorld serverWorld);
     @Shadow
@@ -61,7 +61,7 @@ public abstract class ServerPlayerEntityMixin21_9 extends PlayerEntity {
         if (this.isRemoved())
             cir.setReturnValue(null);
         ServerWorld serverWorld = teleportTarget.world();
-        ServerWorld serverWorld2 = this.getWorld();
+        ServerWorld serverWorld2 = this.getEntityWorld();
         if (((EntityMixinAccess)this).isInCustomPortal()) {
             ServerPlayerEntity thisPlayer = (ServerPlayerEntity)(Object)this;
             this.inTeleportationState = true;

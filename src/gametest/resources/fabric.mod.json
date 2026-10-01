@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "customportals-test",
+  "version": "1.0.0",
+  "name": "Custom Portals Game Tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": ["dev.custom.portals.ItemTeleportGameTests"]
+  }
+}

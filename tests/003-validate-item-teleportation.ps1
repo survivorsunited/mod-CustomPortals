@@ -30,6 +30,9 @@ import java.util.*;
 import java.lang.reflect.*;
 class World {}
 class Server { boolean enterable=true; boolean isEnterableWithPortal(ServerWorld world){return enterable;} }
+class PortalVersionCompat {
+    static boolean canEnterWithPortal(ServerWorld source, ServerWorld destination){return source.getServer().isEnterableWithPortal(destination);}
+}
 class ServerWorld extends World {
     Server server=new Server(); Map<BlockPos,BlockState> blocks=new HashMap<>();
     Server getServer(){return server;}

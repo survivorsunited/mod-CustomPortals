@@ -210,11 +210,38 @@ public class PortalBlock extends Block implements BlockEntityProvider, Waterlogg
    protected void doOnEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
       if (!state.get(LIT))
          return;
+      if (entity instanceof ItemEntity item) {
+         if (world instanceof ServerWorld serverWorld)
+            teleportItem(serverWorld, pos, item);
+         return;
+      }
       CustomPortal portal = CustomPortals.PORTALS.get(world).getPortalFromPos(pos);
       if (portal != null && entity.canUsePortals(false)) {
          entity.tryUsePortal(this, pos);
          ((EntityMixinAccess) entity).setInCustomPortal(portal);
       }
+   }
+
+   /** Teleport dropped items immediately, regardless of how they were spawned. */
+   public boolean teleportItem(ServerWorld world, BlockPos pos, ItemEntity item) {
+      BlockState state = world.getBlockState(pos);
+      if (!state.isOf(this) || !state.get(LIT) || !item.isAlive() || item.getStack().isEmpty())
+         return false;
+      if (item.hasPortalCooldown()) {
+         // Keep the arrival portal from sending the item straight back.
+         item.resetPortalCooldown();
+         return false;
+      }
+      TeleportTarget target = createTeleportTarget(world, item, pos);
+      if (target == null || !world.getServer().isEnterableWithPortal(target.world())
+            || !item.canTeleportBetween(world, target.world()))
+         return false;
+      item.resetPortalCooldown();
+      Entity teleported = item.teleportTo(target);
+      if (teleported == null)
+         return false;
+      teleported.resetPortalCooldown();
+      return true;
    }
    
    @Environment(EnvType.CLIENT)

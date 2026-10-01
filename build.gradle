@@ -75,8 +75,8 @@ processResources {
 
 	doLast {
 		def mixins = useLevelLoadingScreen
-			? ["EntityMixin", "ServerPlayerEntityMixin21_9", "TeleportTargetAccessor"]
-			: ["EntityMixin", "ServerPlayerEntityMixin", "TeleportTargetAccessor"]
+			? ["EntityMixin", "ItemEntityMixin", "ServerPlayerEntityMixin21_9", "TeleportTargetAccessor"]
+			: ["EntityMixin", "ItemEntityMixin", "ServerPlayerEntityMixin", "TeleportTargetAccessor"]
 		def client = useLevelLoadingScreen
 			? ["ClientPlayerEntityMixin", "InGameHudMixin", "LevelLoadingScreenMixin"]
 			: ["ClientPlayerEntityMixin", "InGameHudMixin", "DownloadingTerrainScreenMixin"]

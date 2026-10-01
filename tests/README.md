@@ -4,6 +4,21 @@ This directory contains automated tests for the Custom Portals mod.
 
 ## Test Scripts
 
+### 003-validate-item-teleportation.ps1
+
+Runs the item transfer and overlap-check method bodies against small Minecraft
+doubles. Covers immediate transfer, stationary/boundary overlap, inactive and
+unlinked portals, destination restrictions, client isolation, and arrival cooldown.
+These checks do not replace an in-game test of Mixin injection, dropper behavior,
+or Minecraft's item copying/merging during dimension changes.
+
+```powershell
+.\tests\003-validate-item-teleportation.ps1 -JavaHome $env:JAVA_HOME
+```
+
+Requires a JDK 21 or newer. Generated harness sources are retained in the system
+temporary directory for diagnosis; tracked files are not modified.
+
 ### 001-validate-server-startup.ps1
 **Purpose**: Validates server startup and world loading  
 **Tests**:

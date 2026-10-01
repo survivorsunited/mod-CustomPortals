@@ -11,6 +11,6 @@ import net.minecraft.world.TeleportTarget;
 @Mixin(TeleportTarget.class)
 public interface TeleportTargetAccessor {
 
-	@Accessor("relatives")
+	@Accessor("comp_3183")
 	Set<PositionFlag> customPortals$getRelatives();
 }

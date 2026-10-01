@@ -4,6 +4,38 @@ This directory contains automated tests for the Custom Portals mod.
 
 ## Test Scripts
 
+### Minecraft 1.21.11 game tests
+
+```powershell
+.\gradlew.bat build runGameTest --no-daemon
+```
+
+Uses the default 1.21.11 target with Java 21 and the checked-in Gradle wrapper.
+The development-only test mod verifies stationary item transfer, stack count,
+arrival cooldown, and real dropper output through linked portals. It is not
+included in the distributable mod JAR. Tests use an isolated world under
+`build/run/gameTest/` and shut down automatically.
+
+On Windows hosts where Java reports `Unable to establish loopback connection`,
+set `JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=<short-existing-local-directory>`
+for the build process. This avoids long temporary socket paths without changing
+the mod or the host's global Java settings.
+
+### 003-validate-item-teleportation.ps1
+
+Runs the item transfer and overlap-check method bodies against small Minecraft
+doubles. Covers immediate transfer, stationary/boundary overlap, inactive and
+unlinked portals, destination restrictions, client isolation, and arrival cooldown.
+These checks do not replace an in-game test of Mixin injection, dropper behavior,
+or Minecraft's item copying/merging during dimension changes.
+
+```powershell
+.\tests\003-validate-item-teleportation.ps1 -JavaHome $env:JAVA_HOME
+```
+
+Requires a JDK 21 or newer. Generated harness sources are retained in the system
+temporary directory for diagnosis; tracked files are not modified.
+
 ### 001-validate-server-startup.ps1
 **Purpose**: Validates server startup and world loading  
 **Tests**:
